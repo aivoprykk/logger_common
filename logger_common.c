@@ -5,6 +5,9 @@
 #include "freertos/task.h"
 #include "esp_timer.h"
 
+#include <stdio.h>
+#include <string.h>
+
 void delay_ms(uint32_t ms) {
     vTaskDelay((ms + (portTICK_PERIOD_MS - 1)) / portTICK_PERIOD_MS);
 }

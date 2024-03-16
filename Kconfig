@@ -1,16 +1,43 @@
 menu "ESP GPS Logger Common Configuration"
     comment "ESP GPS Logger configuration"
-        config ESP_GPS_VERBOSE_BUILD
+        config VERBOSE_BUILD
             bool "Debug console output"
             default false
             help
                 Show more logging output on console or not
         choice
-            default ESP_GPS_BOARD_LILYGO_EPAPER_T5
+            default HAS_BOARD_LILYGO_T_DISPLAY_S3 if IDF_TARGET_ESP32S3
+            default HAS_BOARD_LILYGO_EPAPER_T5 if IDF_TARGET_ESP32
             prompt "Select board"
-            config ESP_GPS_BOARD_LILYGO_EPAPER_T5
+            config HAS_BOARD_LILYGO_EPAPER_T5
+                depends on IDF_TARGET_ESP32
             bool "Board is Lilygo Epaper T5"
-            config ESP_GPS_BOARD_LILYGO_T_DISPLAY_S3
+            config HAS_BOARD_LILYGO_T_DISPLAY_S3
+                depends on IDF_TARGET_ESP32S3
             bool "Board is Lilygo T-Display S3"
         endchoice
+        menu "Enable BMX280 Temperature sensor"
+            comment "Bmx temperature sensor"
+            config BMX_ENABLE
+                bool "Enable BMX280 temp sensor"
+                default y if HAS_BOARD_LILYGO_T_DISPLAY_S3
+                help
+                    This option enables BMX280 temp sensor.:
+        menu "BMX temperature sensor pins"
+            depends on BMX_ENABLE
+            comment "GPS send and transmit pin configuration"
+            config BMX_SDA
+                int "Bmx280 SDA pin"
+                default 43 if HAS_BOARD_LILYGO_T_DISPLAY_S3
+                default 21
+                help
+                Specify the SDA pin for Bmx280 sensor.
+            config BMX_SCL
+                int "Bmx280 SCL pin"
+                default 44 if HAS_BOARD_LILYGO_T_DISPLAY_S3
+                default 22
+                help
+                Specify the SCL pin for GPS Bmx280 sensor.
+        endmenu
+        endmenu
 endmenu

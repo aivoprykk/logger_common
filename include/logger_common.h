@@ -7,14 +7,22 @@ extern "C" {
 
 #include <stddef.h>
 #include <stdint.h>
+#include "sdkconfig.h"
 
 uint32_t get_millis(void);
 
 void delay_ms(uint32_t ms);
 
-#if defined(DEBUG)
+#if defined(CONFIG_VERBOSE_BUILD)
 #include "esp_log.h"
 #include "esp_system.h"
+
+#ifdef NDEBUG
+#undef NDEBUG
+#endif
+#ifndef DEBUG
+#define DEBUG 1
+#endif
 
 #define LOGR ESP_LOGI(TAG, "[%s]", __FUNCTION__);
 #define TIMER_S                                                 \
@@ -26,6 +34,13 @@ void delay_ms(uint32_t ms);
     printf("[%s] minimum_free_heap_size:%" PRIu32 " bytes\n", __FUNCTION__, esp_get_minimum_free_heap_size());
 
 #else
+
+#ifdef DEBUG
+#undef DEBUG
+#endif
+#ifndef NDEBUG
+#define NDEBUG 1
+#endif
 
 #define TIMER_S
 
