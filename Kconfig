@@ -1,5 +1,4 @@
-menu "ESP GPS Logger Common Configuration"
-    comment "ESP GPS Logger configuration"
+menu "Logger Common Configuration"
         config VERBOSE_BUILD
             bool "Debug console output"
             default false
