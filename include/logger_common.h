@@ -8,6 +8,7 @@ extern "C" {
 #include <stddef.h>
 #include <stdint.h>
 #include "sdkconfig.h"
+#include "esp_err.h"
 
 uint32_t get_millis(void);
 
@@ -30,13 +31,12 @@ struct tm *getLocalTime(struct tm *info, uint32_t ms);
 #endif
 
 #define LOGR ESP_LOGI(TAG, "[%s]", __FUNCTION__);
-#define TIMER_S                                                 \
-    uint32_t millis = get_millis(), emillis = 0; \
-    LOGR
+#define TIMER_INIT static uint32_t millis = 0, emillis = 0;
+#define TIMER_S millis = get_millis(); LOGR
 
 #define TIMER_E                                                                        \
     emillis = get_millis();                                             \
-    ESP_LOGI(TAG, "[%s] --- took %" PRIu32 " ms ---", __FUNCTION__, emillis - millis); /* \
+    ESP_LOGI(TAG, "--- [%s] took %lu ms ---", __FUNCTION__, emillis - millis); /* \
     printf("[%s] minimum_free_heap_size:%" PRIu32 " bytes\n", __FUNCTION__, esp_get_minimum_free_heap_size()); */
 
 #else
@@ -51,6 +51,8 @@ struct tm *getLocalTime(struct tm *info, uint32_t ms);
 #define TIMER_S
 
 #define TIMER_E
+
+#define TIMER_INIT
 
 #define LOGR
 

@@ -1,0 +1,6 @@
+dependencies:
+  idf:
+    version: '>=5.1'
+description: ESP GPS Logger common component for ESP-IDF
+url: https://github.com/aivoprykk/espidf-gps-logger/tree/master/components/logger_common
+version: 0.1.0
