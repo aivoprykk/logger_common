@@ -9,6 +9,18 @@
 #include "freertos/task.h"
 #include "esp_timer.h"
 
+const char * logger_event_strings[] = {
+    "LOGGER_EVENT_DATETIME_SET",                  // Date updated through SNTP 
+    "LOGGER_EVENT_SDCARD_MOUNTED",
+    "LOGGER_EVENT_SDCARD_MOUNT_FAILED", 
+    "LOGGER_EVENT_SDCARD_UNMOUNTED", 
+    "LOGGER_EVENT_FAT_PARTITION_MOUNTED",
+    "LOGGER_EVENT_FAT_PARTITION_MOUNT_FAILED", 
+    "LOGGER_EVENT_FAT_PARTITION_UNMOUNTED",
+    "LOGGER_EVENT_SCREEN_UPDATE_BEGIN",
+    "LOGGER_EVENT_SCREEN_UPDATE_END",
+};
+
 void delay_ms(uint32_t ms) {
     vTaskDelay((ms + (portTICK_PERIOD_MS - 1)) / portTICK_PERIOD_MS);
 }

@@ -23,6 +23,8 @@ enum {
     LOGGER_EVENT_SCREEN_UPDATE_END,
 };
 
+extern const char * logger_event_strings[];
+
 #ifdef __cplusplus
 }
 #endif
