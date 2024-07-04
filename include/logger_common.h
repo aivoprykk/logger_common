@@ -31,9 +31,13 @@ struct tm *getLocalTime(struct tm *info, uint32_t ms);
 #endif
 
 #define LOGR ESP_LOGI(TAG, "[%s]", __FUNCTION__);
+#define DLOG(a, b, ...) ESP_LOGI(a, b, __VA_ARGS__);
 #define TIMER_INIT static uint32_t millis = 0, emillis = 0;
 #define TIMER_S millis = get_millis(); LOGR
 
+#define TIMER_M(a, b, ...) \
+    emillis = (get_millis());  \
+    ESP_LOGI(a, b, __VA_ARGS__, emillis - millis)
 #define TIMER_E                                                                        \
     emillis = get_millis();                                             \
     ESP_LOGI(TAG, "--- [%s] took %lu ms ---", __FUNCTION__, emillis - millis);
@@ -48,8 +52,10 @@ struct tm *getLocalTime(struct tm *info, uint32_t ms);
 
 #define TIMER_S
 #define TIMER_E
+#define TIMER_M(a, b, ...) ((void)0)
 #define TIMER_INIT
 #define LOGR
+#define DLOG(a, b, ...) ((void)0)
 
 #endif
 
