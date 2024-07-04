@@ -36,9 +36,7 @@ struct tm *getLocalTime(struct tm *info, uint32_t ms);
 
 #define TIMER_E                                                                        \
     emillis = get_millis();                                             \
-    ESP_LOGI(TAG, "--- [%s] took %lu ms ---", __FUNCTION__, emillis - millis); /* \
-    printf("[%s] minimum_free_heap_size:%" PRIu32 " bytes\n", __FUNCTION__, esp_get_minimum_free_heap_size()); */
-
+    ESP_LOGI(TAG, "--- [%s] took %lu ms ---", __FUNCTION__, emillis - millis);
 #else
 
 #ifdef DEBUG
@@ -49,11 +47,8 @@ struct tm *getLocalTime(struct tm *info, uint32_t ms);
 #endif
 
 #define TIMER_S
-
 #define TIMER_E
-
 #define TIMER_INIT
-
 #define LOGR
 
 #endif
