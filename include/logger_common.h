@@ -30,8 +30,10 @@ struct tm *getLocalTime(struct tm *info, uint32_t ms);
 #define DEBUG 1
 #endif
 
+#ifndef ILOG
+#define ILOG(a, b, ...) ESP_LOGI(a, b, __VA_ARGS__);
+#endif
 #define LOGR ESP_LOGI(TAG, "[%s]", __FUNCTION__);
-#define DLOG(a, b, ...) ESP_LOGI(a, b, __VA_ARGS__);
 #define TIMER_INIT static uint32_t millis = 0, emillis = 0;
 #define TIMER_S millis = get_millis(); LOGR
 
@@ -50,12 +52,14 @@ struct tm *getLocalTime(struct tm *info, uint32_t ms);
 #define NDEBUG 1
 #endif
 
+#ifndef ILOG
+#define ILOG(a, b, ...) ((void)0)
+#endif
+#define LOGR
 #define TIMER_S
 #define TIMER_E
 #define TIMER_M(a, b, ...) ((void)0)
 #define TIMER_INIT
-#define LOGR
-#define DLOG(a, b, ...) ((void)0)
 
 #endif
 
