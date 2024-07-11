@@ -19,9 +19,7 @@ struct tm;
 struct tm *getLocalTime(struct tm *info, uint32_t ms);
 #endif
 
-#if defined(CONFIG_VERBOSE_BUILD)
-#include "esp_log.h"
-#include "esp_system.h"
+#if (CONFIG_LOGGER_COMMON_LOG_LEVEL <= 2)
 
 #ifdef NDEBUG
 #undef NDEBUG
@@ -30,36 +28,16 @@ struct tm *getLocalTime(struct tm *info, uint32_t ms);
 #define DEBUG 1
 #endif
 
-#ifndef ILOG
-#define ILOG(a, b, ...) ESP_LOGI(a, b, __VA_ARGS__);
+#ifndef LOG_INFO
+#define LOG_INFO(a, b, ...) ESP_LOGI(a, b, __VA_ARGS__)
 #endif
-#define LOGR ESP_LOGI(TAG, "[%s]", __FUNCTION__);
-#define TIMER_INIT static uint32_t millis = 0, emillis = 0;
-#define TIMER_S millis = get_millis(); LOGR
-
-#define TIMER_M(a, b, ...) \
-    emillis = (get_millis());  \
-    ESP_LOGI(a, b, __VA_ARGS__, emillis - millis)
-#define TIMER_E                                                                        \
-    emillis = get_millis();                                             \
-    ESP_LOGI(TAG, "--- [%s] took %lu ms ---", __FUNCTION__, emillis - millis);
-#else
-
-#ifdef DEBUG
-#undef DEBUG
+#ifndef MEAS_START
+#define MEAS_START() uint64_t _start = (esp_timer_get_time())
 #endif
-#ifndef NDEBUG
-#define NDEBUG 1
+#ifndef MEAS_END
+#define MEAS_END(a, b, ...) \
+    ESP_LOGI(a, b, __VA_ARGS__, (esp_timer_get_time() - _start))
 #endif
-
-#ifndef ILOG
-#define ILOG(a, b, ...) ((void)0)
-#endif
-#define LOGR
-#define TIMER_S
-#define TIMER_E
-#define TIMER_M(a, b, ...) ((void)0)
-#define TIMER_INIT
 
 #endif
 
