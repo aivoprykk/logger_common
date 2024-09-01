@@ -14,11 +14,17 @@ const char * logger_event_strings[] = {
     "LOGGER_EVENT_SDCARD_MOUNTED",
     "LOGGER_EVENT_SDCARD_MOUNT_FAILED", 
     "LOGGER_EVENT_SDCARD_UNMOUNTED", 
+    "LOGGER_EVENT_SDCARD_INIT_DONE",
+    "LOGGER_EVENT_SDCARD_DEINIT_DONE",
     "LOGGER_EVENT_FAT_PARTITION_MOUNTED",
     "LOGGER_EVENT_FAT_PARTITION_MOUNT_FAILED", 
     "LOGGER_EVENT_FAT_PARTITION_UNMOUNTED",
     "LOGGER_EVENT_SCREEN_UPDATE_BEGIN",
     "LOGGER_EVENT_SCREEN_UPDATE_END",
+    "LOGGER_EVENT_OTA_AUTO_UPDATE_START",
+    "LOGGER_EVENT_OTA_AUTO_UPDATE_FINISH",
+    "LOGGER_EVENT_OTA_AUTO_UPDATE_FAILED",
+    "LOGGER_EVENT_OTA_AUTO_UPDATE_HAS_UPDATE",
 };
 
 void delay_ms(uint32_t ms) {
@@ -44,10 +50,12 @@ esp_err_t task_memory_info(const char * task_name) {
 esp_err_t memory_info_large(const char * task_name) {
     multi_heap_info_t heap_info;
     heap_caps_get_info(&heap_info, MALLOC_CAP_DEFAULT);
-    printf("** Task: [%s] Free heap: %d bytes, minimum free heap size: %d bytes\n",task_name , heap_info.total_free_bytes, heap_info.minimum_free_bytes);
-    const int min_free_8bit_cap = heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
-    const int min_free_32bit_cap = heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_32BIT);
-    printf("** Task: [%s] have had inimum free heap:  dram(8bit_cap): %d bytes, iram(32bit_cap): %d bytes\n", task_name, min_free_8bit_cap, (min_free_32bit_cap - min_free_8bit_cap));
+    printf("** Mem info [%s]: Free heap: %d, minimum free heap bytes: %d, blocks_free: %d, largest_free_block: %d\n",task_name , heap_info.total_free_bytes, heap_info.minimum_free_bytes, heap_info.free_blocks, heap_info.largest_free_block);
+    // const int min_free_8bit_cap = heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+    // const int min_free_32bit_cap = heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_32BIT);
+    // const int mem_size = heap_caps_get_total_size(MALLOC_CAP_INTERNAL);
+    // const int mem_size_free = heap_caps_get_free_size(MALLOC_CAP_INTERNAL);
+    // printf("** [%s] heap total: %d, free: %d, have had inimum free: dram(8bit_cap): %d, iram(32bit_cap): %d\n", task_name, mem_size, mem_size_free, min_free_8bit_cap, (min_free_32bit_cap - min_free_8bit_cap));
     return ESP_OK;
 }
 
