@@ -21,13 +21,6 @@ struct tm *getLocalTime(struct tm *info, uint32_t ms);
 
 #if (CONFIG_LOGGER_COMMON_LOG_LEVEL <= 2)
 
-#ifdef NDEBUG
-#undef NDEBUG
-#endif
-#ifndef DEBUG
-#define DEBUG 1
-#endif
-
 #ifndef LOG_INFO
 #define LOG_INFO(a, b, ...) ESP_LOGI(a, b, __VA_ARGS__)
 #endif
