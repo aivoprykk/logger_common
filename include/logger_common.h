@@ -18,7 +18,9 @@ void delay_ms(uint32_t ms);
 struct tm;
 struct tm *getLocalTime(struct tm *info, uint32_t ms);
 #endif
-
+#if (defined(CONFIG_LOGGER_BUILD_MODE_DEV) && !defined(DEBUG))
+#define DEBUG
+#endif
 #if (CONFIG_LOGGER_COMMON_LOG_LEVEL <= 2)
 
 #ifndef LOG_INFO
