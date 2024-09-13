@@ -60,6 +60,21 @@ struct tm *getLocalTime(struct tm *info, uint32_t ms);
 // set a bit to 0 (bit 0-7)
 #define CLRBIT(var, bit)	(var &= (~(1 << (bit))))
 
+#define STRINGIFY_(x) #x
+#define STRINGIFY(x) STRINGIFY_(x),
+#define STRINGIFY_V(x, y) STRINGIFY_(x),
+#define STRINGIFY_L(x, y) STRINGIFY_(y),
+#define STRINGIFY_M(x, y, z) STRINGIFY_(y),
+#define NUMERIFY_V(x, y) y,
+#define NUMERIFY_VV(x, y, z) z,
+#define ENUM(x) x,
+#define ENUM_V(x, y) x = y,
+#define ENUM_VV(x, y, z) x##_##y = z,
+#define A_
+#define ADD(x) x|A_
+#define ADD_QUOTE(x) STRINGIFY_(x)
+
+#define lengthof(x) (sizeof(x) / sizeof((x)[0]))
 
 esp_err_t task_memory_info(const char * task_name);
 esp_err_t memory_info_large(const char * task_name);

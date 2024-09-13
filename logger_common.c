@@ -1,5 +1,5 @@
 
-#include "logger_common.h"
+#include "logger_events.h"
 
 #include <sys/time.h>
 #include <stdio.h>
@@ -9,22 +9,8 @@
 #include "freertos/task.h"
 #include "esp_timer.h"
 
-const char * logger_event_strings[] = {
-    "LOGGER_EVENT_DATETIME_SET",                  // Date updated through SNTP 
-    "LOGGER_EVENT_SDCARD_MOUNTED",
-    "LOGGER_EVENT_SDCARD_MOUNT_FAILED", 
-    "LOGGER_EVENT_SDCARD_UNMOUNTED", 
-    "LOGGER_EVENT_SDCARD_INIT_DONE",
-    "LOGGER_EVENT_SDCARD_DEINIT_DONE",
-    "LOGGER_EVENT_FAT_PARTITION_MOUNTED",
-    "LOGGER_EVENT_FAT_PARTITION_MOUNT_FAILED", 
-    "LOGGER_EVENT_FAT_PARTITION_UNMOUNTED",
-    "LOGGER_EVENT_SCREEN_UPDATE_BEGIN",
-    "LOGGER_EVENT_SCREEN_UPDATE_END",
-    "LOGGER_EVENT_OTA_AUTO_UPDATE_START",
-    "LOGGER_EVENT_OTA_AUTO_UPDATE_FINISH",
-    "LOGGER_EVENT_OTA_AUTO_UPDATE_FAILED",
-    "LOGGER_EVENT_OTA_AUTO_UPDATE_HAS_UPDATE",
+const char * const logger_event_strings[] = {
+    LOGGER_EVENT_LIST(STRINGIFY)
 };
 
 void delay_ms(uint32_t ms) {
