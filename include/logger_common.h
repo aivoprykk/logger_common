@@ -33,7 +33,16 @@ struct tm *getLocalTime(struct tm *info, uint32_t ms);
 #define MEAS_END(a, b, ...) \
     ESP_LOGI(a, b, __VA_ARGS__, (esp_timer_get_time() - _start))
 #endif
-
+#else
+#ifndef LOG_INFO
+#define LOG_INFO(a, b, ...)
+#endif
+#ifndef MEAS_START
+#define MEAS_START()
+#endif
+#ifndef MEAS_END
+#define MEAS_END(a, b, ...)
+#endif
 #endif
 
 #ifndef MAX
