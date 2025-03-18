@@ -9,9 +9,19 @@
 #include "freertos/task.h"
 #include "esp_timer.h"
 
-const char * const logger_event_strings[] = {
+#if (CONFIG_LOGGER_COMMON_LOG_LEVEL < 2 || CONFIG_LOGGER_GLOBAL_LOG_LEVEL < 2)
+static const char * const _logger_event_strings[] = {
     LOGGER_EVENT_LIST(STRINGIFY)
 };
+const char * logger_event_strings(int id) {
+    return _logger_event_strings[id];
+}
+#else
+const char * logger_event_strings(int id) {
+    return "LOGGER_EVENT";
+}
+#endif
+
 
 void delay_ms(uint32_t ms) {
     vTaskDelay((ms + (portTICK_PERIOD_MS - 1)) / portTICK_PERIOD_MS);

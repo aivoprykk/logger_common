@@ -10,39 +10,8 @@ extern "C" {
 #include "sdkconfig.h"
 #include "esp_err.h"
 
-uint32_t get_millis(void);
-
-void delay_ms(uint32_t ms);
-
-#ifndef getLocalTime
-struct tm;
-struct tm *getLocalTime(struct tm *info, uint32_t ms);
-#endif
 #if (defined(CONFIG_LOGGER_BUILD_MODE_DEV) && !defined(DEBUG))
 #define DEBUG
-#endif
-#if (CONFIG_LOGGER_COMMON_LOG_LEVEL <= 2)
-
-#ifndef LOG_INFO
-#define LOG_INFO(a, b, ...) ESP_LOGI(a, b, __VA_ARGS__)
-#endif
-#ifndef MEAS_START
-#define MEAS_START() uint64_t _start = (esp_timer_get_time())
-#endif
-#ifndef MEAS_END
-#define MEAS_END(a, b, ...) \
-    ESP_LOGI(a, b, __VA_ARGS__, (esp_timer_get_time() - _start))
-#endif
-#else
-#ifndef LOG_INFO
-#define LOG_INFO(a, b, ...)
-#endif
-#ifndef MEAS_START
-#define MEAS_START()
-#endif
-#ifndef MEAS_END
-#define MEAS_END(a, b, ...)
-#endif
 #endif
 
 #ifndef MAX
@@ -82,14 +51,50 @@ struct tm *getLocalTime(struct tm *info, uint32_t ms);
 #define A_
 #define ADD(x) x|A_
 #define ADD_QUOTE(x) STRINGIFY_(x)
+#define JOIN_AGAIN(x, y) x ## y
+#define JOIN(x, y) JOIN_AGAIN(x, y)
 
 #define lengthof(x) (sizeof(x) / sizeof((x)[0]))
 
+typedef struct m_config_item_s {
+    const char * name;
+    int pos;
+    uint32_t value;
+    const char *desc;
+} m_config_item_t;
+
+#ifndef getLocalTime
+struct tm;
+struct tm *getLocalTime(struct tm *info, uint32_t ms);
+#endif
+uint32_t get_millis(void);
+void delay_ms(uint32_t ms);
 esp_err_t task_memory_info(const char * task_name);
 esp_err_t memory_info_large(const char * task_name);
 esp_err_t task_top(void);
 int32_t smooth(const int32_t * array, const int32_t index, const uint32_t size, const uint8_t window_size);
-int smooth_int(const int * array, const int32_t index, const uint32_t size, const uint8_t window_size);
+
+inline void uint8_to_hex_string(uint8_t value, char *hex_str) {
+    const char hex_chars[] = "0123456789ABCDEF";
+    hex_str[0] = hex_chars[(value >> 4) & 0x0F]; // Extract high nibble
+    hex_str[1] = hex_chars[value & 0x0F];        // Extract low nibble
+    hex_str[2] = '\0';                           // Null-terminate the string
+}
+
+inline void uint32_to_uint8_array(uint32_t value, uint8_t array[4]) {
+    array[3] = (uint8_t)((value >> 24) & 0xFF);
+    array[2] = (uint8_t)((value >> 16) & 0xFF);
+    array[1] = (uint8_t)((value >> 8) & 0xFF);
+    array[0] = (uint8_t)(value & 0xFF);
+}
+
+inline void mac_to_char(uint8_t *mac, char *mac_str, uint8_t start) {
+    uint8_t i = start, j = 6;
+    for (uint8_t i = start; i < j; i++) {
+        uint8_to_hex_string(mac[i], &mac_str[(i-start) * 2]);
+    }
+    mac_str[(j-start) * 2] = 0;
+}
 
 #ifdef __cplusplus
 }
