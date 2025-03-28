@@ -71,6 +71,9 @@ uint32_t get_millis(void);
 void delay_ms(uint32_t ms);
 esp_err_t task_memory_info(const char * task_name);
 esp_err_t memory_info_large(const char * task_name);
+#if (C_LOG_LEVEL < 2)
+esp_err_t tasks_memory_info();
+#endif
 esp_err_t task_top(void);
 int32_t smooth(const int32_t * array, const int32_t index, const uint32_t size, const uint8_t window_size);
 

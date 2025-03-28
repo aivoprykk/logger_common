@@ -39,9 +39,24 @@ struct tm * getLocalTime(struct tm *info, uint32_t ms) {
 }
 
 esp_err_t task_memory_info(const char * task_name) {
-    printf("*** Task [%s] stack High Water Mark: %u bytes ***\n", task_name, uxTaskGetStackHighWaterMark(NULL));
+    printf("*** Task %s (%s) stack High Water Mark: %u bytes ***\n", pcTaskGetName(NULL), task_name, uxTaskGetStackHighWaterMark(NULL));
     return ESP_OK;
 }
+
+#if (C_LOG_LEVEL < 2)
+esp_err_t tasks_memory_info() {
+    char str[40*uxTaskGetNumberOfTasks()+1];
+    vTaskList(&(str[0]));
+    printf("Task\t\tState\tPri\tHWM\tN1\tN2\n******\n%s", str);
+    return ESP_OK;
+}
+esp_err_t task_top() {
+    char str[40*uxTaskGetNumberOfTasks()+1];
+    vTaskGetRunTimeStats(&(str[0]));
+    printf("Task\t\tATime\tRTime\n******\n%s", str);
+    return ESP_OK;
+}
+#endif
 
 esp_err_t memory_info_large(const char * task_name) {
     multi_heap_info_t heap_info;
@@ -52,13 +67,6 @@ esp_err_t memory_info_large(const char * task_name) {
     // const int mem_size = heap_caps_get_total_size(MALLOC_CAP_INTERNAL);
     // const int mem_size_free = heap_caps_get_free_size(MALLOC_CAP_INTERNAL);
     // printf("** [%s] heap total: %d, free: %d, have had inimum free: dram(8bit_cap): %d, iram(32bit_cap): %d\n", task_name, mem_size, mem_size_free, min_free_8bit_cap, (min_free_32bit_cap - min_free_8bit_cap));
-    return ESP_OK;
-}
-
-static char msgbbb[280];
-esp_err_t task_top() {
-    vTaskGetRunTimeStats(&(msgbbb[0]));
-    printf("** [%s]\n", msgbbb);
     return ESP_OK;
 }
 
