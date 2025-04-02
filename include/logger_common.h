@@ -8,6 +8,9 @@ extern "C" {
 #include <stddef.h>
 #include <stdint.h>
 #include "sdkconfig.h"
+
+#include "freertos/FreeRTOS.h"
+
 #include "esp_err.h"
 
 #if (defined(CONFIG_LOGGER_BUILD_MODE_DEV) && !defined(DEBUG))
@@ -67,15 +70,18 @@ typedef struct m_config_item_s {
 struct tm;
 struct tm *getLocalTime(struct tm *info, uint32_t ms);
 #endif
-uint32_t get_millis(void);
-void delay_ms(uint32_t ms);
+
 esp_err_t task_memory_info(const char * task_name);
-esp_err_t memory_info_large(const char * task_name);
-#if (C_LOG_LEVEL < 2)
+#if (C_LOG_LEVEL < 3  || defined(DEBUG))
 esp_err_t tasks_memory_info();
 #endif
 esp_err_t task_top(void);
 int32_t smooth(const int32_t * array, const int32_t index, const uint32_t size, const uint8_t window_size);
+
+// unsigned long get_micros();
+unsigned long get_millis();
+#define DELAY_MS(x) vTaskDelay((ms + (portTICK_PERIOD_MS - 1)) / portTICK_PERIOD_MS)
+inline void delay_ms(uint32_t ms) { DELAY_MS(ms); }
 
 inline void uint8_to_hex_string(uint8_t value, char *hex_str) {
     const char hex_chars[] = "0123456789ABCDEF";
