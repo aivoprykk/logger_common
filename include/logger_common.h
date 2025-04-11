@@ -33,13 +33,17 @@ extern "C" {
 #define IS_ALNUM(x) (((x)>='a' && (x) <= 'z')) ||((x)>='A' && (x) <= 'Z') || (((x)>='0' && (x) <= '9'))
 
 // get a bit from a variable (bit 0-7)
-#define GETBIT(var, bit)	(( var & (1 << (bit) ) ) ? 1 : 0 )
-
+#define BIT_GET(var, bit)	( (var) & (1U << (uint8_t)(bit) ) )
+#define GETBIT(var, bit)	(BIT_GET(var, bit) ? 1 : 0 )
 // set a bit to 1 (bit 0-7)
-#define SETBIT(var, bit)	(var |= (1 << (bit)))
-
+#define BIT_SET(var, bit)	((var) |= (1U << (uint8_t)(bit)))
+#define SETBIT(var, bit)	BIT_SET(var, bit)
 // set a bit to 0 (bit 0-7)
-#define CLRBIT(var, bit)	(var &= (~(1 << (bit))))
+#define BIT_CLR(var, bit)	((var) &= (~(1U << (uint8_t)(bit))))
+#define CLRBIT(var, bit)	BIT_CLR(var, bit)
+// toggle a bit (bit 0-7)
+#define BIT_TGL(var, bit)	((var) ^= (1U << (uint8_t)(bit)))
+#define FLIPBIT(var, bit)   BIT_TGL(var, bit)
 
 #define STRINGIFY_(x) #x
 #define STRINGIFY(x) STRINGIFY_(x),
