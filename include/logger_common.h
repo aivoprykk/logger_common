@@ -63,6 +63,25 @@ extern "C" {
 
 #define lengthof(x) (sizeof(x) / sizeof((x)[0]))
 
+#define NUM_GE_3_DIG(x) ((x) >= 100)
+#define NUM_LT_3_DIG(x) ((x) < 100)
+#define ONE_M_S_IN_MM_S ONE_K
+#define FROM_K(x) ((x) / 1000.0f)
+#define TO_K_F(x) ((x) * 1000.0f)
+#define TO_K_UL(x) ((x) * 1000UL)
+#define TO_M(x) ((x) * 1000000.0f)
+#define TO_M_UL(x) ((x) * 1000000UL)
+#define SEC_TO_HOUR(x) ((x) / 3600.0f)
+#define MM_S_TO_M_S(x) FROM_K(x)
+#define MM_TO_M(x) FROM_K(x)
+#define M_TO_KM(x) FROM_K(x)
+#define MM_TO_KM(x) ((x) * 1000000.0f)
+#define MS_TO_SEC(x) FROM_K(x)
+#define SEC_TO_MS(x) TO_K_UL(x)
+#define SEC_TO_US(x) TO_M_UL(x)
+#define MS_TO_US(x) TO_K_UL(x)
+#define M_TO_MM(x) TO_K_UL(x)
+
 typedef struct m_config_item_s {
     const char * name;
     int pos;
