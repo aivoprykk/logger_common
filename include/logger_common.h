@@ -89,21 +89,21 @@ inline void delay_ms(uint32_t ms) { DELAY_MS(ms); }
 
 inline void uint8_to_hex_string(uint8_t value, char *hex_str) {
     const char hex_chars[] = "0123456789ABCDEF";
-    hex_str[0] = hex_chars[(value >> 4) & 0x0F]; // Extract high nibble
-    hex_str[1] = hex_chars[value & 0x0F];        // Extract low nibble
+    hex_str[0] = hex_chars[(value >> 4u) & 0x0Fu]; // Extract high nibble
+    hex_str[1] = hex_chars[value & 0x0Fu];        // Extract low nibble
     hex_str[2] = '\0';                           // Null-terminate the string
 }
 
 inline void uint32_to_uint8_array(uint32_t value, uint8_t array[4]) {
-    array[3] = (uint8_t)((value >> 24) & 0xFF);
-    array[2] = (uint8_t)((value >> 16) & 0xFF);
-    array[1] = (uint8_t)((value >> 8) & 0xFF);
+    array[3] = (uint8_t)((value >> 24u) & 0xFFu);
+    array[2] = (uint8_t)((value >> 16u) & 0xFFu);
+    array[1] = (uint8_t)((value >> 8u) & 0xFFu);
     array[0] = (uint8_t)(value & 0xFF);
 }
 
 inline void mac_to_char(uint8_t *mac, char *mac_str, uint8_t start) {
     uint8_t i = start, j = 6;
-    for (uint8_t i = start; i < j; i++) {
+    for (;i < j; i++) {
         uint8_to_hex_string(mac[i], &mac_str[(i-start) * 2]);
     }
     mac_str[(j-start) * 2] = 0;

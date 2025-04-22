@@ -7,7 +7,8 @@ idf_component_register(
 )
 
 if(CONFIG_GPS_LOG_USE_CJSON)
-    target_link_libraries(${COMPONENT_LIB} PRIVATE idf::json)
-else()
-    target_link_libraries(${COMPONENT_LIB} PRIVATE idf::ccan_json)
+    target_link_libraries(${COMPONENT_LIB} PUBLIC idf::json)
+endif()
+if(CONFIG_GPS_LOG_USE_CCAN_JSON)
+    target_link_libraries(${COMPONENT_LIB} PUBLIC idf::ccan_json)
 endif()

@@ -45,6 +45,11 @@ menu "ESPIDF Logger Common Configuration"
         default n
         help
             This option enables Watchdog Timer.
+    config FLASH_PARTITIONS
+        bool "Rewrite Flash Partitions"
+        default n
+        help
+            This option enables rewriting Flash Partitions.
     config LOGGER_USE_GLOBAL_LOG_LEVEL
         bool "Use global log level"
         default n

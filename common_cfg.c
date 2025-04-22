@@ -1,5 +1,6 @@
 #include "common_cfg.h"
 #include "logger_common.h"
+#if defined(CONFIG_GPS_LOG_USE_CJSON) || defined(CONFIG_GPS_LOG_USE_CCAN_JSON)
 #if defined(CONFIG_GPS_LOG_USE_CJSON)
 #include "cJSON.h"
 #else
@@ -106,3 +107,4 @@ uint8_t set_c(void *item, char *val, uint8_t def) {
     }
     return 255;
 }
+#endif
