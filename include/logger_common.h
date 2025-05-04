@@ -67,6 +67,8 @@ extern "C" {
 #define NUM_LT_3_DIG(x) ((x) < 100)
 #define ONE_M_S_IN_MM_S ONE_K
 #define FROM_K(x) ((x) / 1000.0f)
+#define FROM_100K(x) ((x) / 100000.0f)
+#define FROM_10M(x) ((x) / 10000000.0f)
 #define TO_K_F(x) ((x) * 1000.0f)
 #define TO_K_UL(x) ((x) * 1000UL)
 #define TO_M(x) ((x) * 1000000.0f)
