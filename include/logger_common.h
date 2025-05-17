@@ -63,21 +63,34 @@ extern "C" {
 
 #define lengthof(x) (sizeof(x) / sizeof((x)[0]))
 
+enum units_e {
+    MS_50 = 50,
+    QUATER_SEC_IN_MS = 250,
+    HALF_SEC_IN_MS = 500,
+    ONE_K = 1000,
+    HALF_H_IN_SECS = 1800,
+    ONE_H_IN_SECS = 3600
+};
+
 #define NUM_GE_3_DIG(x) ((x) >= 100)
 #define NUM_LT_3_DIG(x) ((x) < 100)
 #define ONE_M_S_IN_MM_S ONE_K
 #define FROM_K(x) ((x) / 1000.0f)
+#define HZ_TO_MS(x) (1000ul / (x))
 #define FROM_100K(x) ((x) / 100000.0f)
+#define FROM_M(x) ((x) / 1000000.0f)
 #define FROM_10M(x) ((x) / 10000000.0f)
 #define TO_K_F(x) ((x) * 1000.0f)
 #define TO_K_UL(x) ((x) * 1000UL)
 #define TO_M(x) ((x) * 1000000.0f)
 #define TO_M_UL(x) ((x) * 1000000UL)
 #define SEC_TO_HOUR(x) ((x) / 3600.0f)
+#define HOUR_TO_SEC(x) ((x) * 3600.0f)
 #define MM_S_TO_M_S(x) FROM_K(x)
 #define MM_TO_M(x) FROM_K(x)
 #define M_TO_KM(x) FROM_K(x)
-#define MM_TO_KM(x) ((x) * 1000000.0f)
+#define MM_TO_KM(x) FROM_M(x)
+#define KM_TO_MM(x) TO_M(x)
 #define MS_TO_SEC(x) FROM_K(x)
 #define SEC_TO_MS(x) TO_K_UL(x)
 #define SEC_TO_US(x) TO_M_UL(x)
@@ -128,6 +141,15 @@ inline void mac_to_char(uint8_t *mac, char *mac_str, uint8_t start) {
         uint8_to_hex_string(mac[i], &mac_str[(i-start) * 2]);
     }
     mac_str[(j-start) * 2] = 0;
+}
+
+#define TOLOWER_CHAR(c) (((c) >= 'A' && (c) <= 'Z') ? ((c) + 32) : (c))
+
+inline void str_tolower(char *s) {
+    while (*s) {
+        if (*s >= 'A' && *s <= 'Z') *s += 32;
+        s++;
+    }
 }
 
 #ifdef __cplusplus
