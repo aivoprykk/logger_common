@@ -64,6 +64,7 @@ extern "C" {
 #define lengthof(x) (sizeof(x) / sizeof((x)[0]))
 
 enum units_e {
+    TWO_SECONDS = 2,
     MS_50 = 50,
     QUATER_SEC_IN_MS = 250,
     HALF_SEC_IN_MS = 500,
@@ -76,6 +77,7 @@ enum units_e {
 #define NUM_LT_3_DIG(x) ((x) < 100)
 #define ONE_M_S_IN_MM_S ONE_K
 #define FROM_K(x) ((x) / 1000.0f)
+#define FROM_K_UL(x) ((x) / 1000ul)
 #define HZ_TO_MS(x) (1000ul / (x))
 #define FROM_100K(x) ((x) / 100000.0f)
 #define FROM_M(x) ((x) / 1000000.0f)
@@ -85,7 +87,7 @@ enum units_e {
 #define TO_M(x) ((x) * 1000000.0f)
 #define TO_M_UL(x) ((x) * 1000000UL)
 #define SEC_TO_HOUR(x) ((x) / 3600.0f)
-#define HOUR_TO_SEC(x) ((x) * 3600.0f)
+#define HOUR_TO_SEC(x) ((x) * 3600LL)
 #define MM_S_TO_M_S(x) FROM_K(x)
 #define MM_TO_M(x) FROM_K(x)
 #define M_TO_KM(x) FROM_K(x)
@@ -96,7 +98,15 @@ enum units_e {
 #define SEC_TO_US(x) TO_M_UL(x)
 #define MS_TO_US(x) TO_K_UL(x)
 #define M_TO_MM(x) TO_K_UL(x)
-
+#define MS_TO_MM_S(x) TO_K_UL(x)
+#define ROUND_NANO(x) ((x) + 500000L)
+#define NANO_TO_MILLIS_ROUND(x) ((int32_t)(ROUND_NANO(x) / 1000000L))
+#define NANO_TO_US_ROUND(x) ((int32_t)(ROUND_NANO(x) / 1000L))
+#define LEAP_UTC_OFFSET 18 // seconds, as of 2025
+#define POW_2(x) ((x) * (x))
+#define METERS_PER_LATITUDE_DEGREE 111195.0f
+#define DEG_TO_METERS(x) ((x) * POW_2(METERS_PER_LATITUDE_DEGREE))
+#define EARTH_RADIUS_M 6371000.0
 typedef struct m_config_item_s {
     const char * name;
     int pos;
@@ -104,10 +114,13 @@ typedef struct m_config_item_s {
     const char *desc;
 } m_config_item_t;
 
-#ifndef getLocalTime
 struct tm;
-struct tm *getLocalTime(struct tm *info, uint32_t ms);
-#endif
+struct timeval;
+struct tm *get_local_time(struct tm *info);
+int c_set_time(struct tm *tm, uint32_t us, float timezone);
+int c_set_time_ts(int64_t sec, uint32_t us, float timezone);
+int c_set_time_ms(int64_t ms, uint32_t us, float timezone);
+struct tm * c_timeval_to_tm_utc(const struct timeval *tv, struct tm *result);
 
 esp_err_t task_memory_info(const char * task_name);
 #if (C_LOG_LEVEL < 3  || defined(DEBUG))

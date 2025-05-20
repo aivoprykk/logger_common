@@ -19,11 +19,38 @@ const char * logger_event_strings(int id) {
 }
 #endif
 
-struct tm * getLocalTime(struct tm *info, uint32_t ms) {
-    assert(info);
-    time_t now = time(0);
-    localtime_r(&now, info);
-    return info;
+int c_set_time_ts(int64_t sec, uint32_t us, float timezone) {
+    if(sec > 1672531200) { /// 2023-01-01
+        struct timeval tv = { .tv_sec = (sec + (int64_t)HOUR_TO_SEC(timezone)), .tv_usec = us };
+        // struct timeval tv = { .tv_sec = sec, .tv_usec = 0 };
+        // printf("[%s]: sec:%lld, tv_sec:%lld, tv_usec:%ld, tzsec: %lld\n", __func__, sec, tv.tv_sec, tv.tv_usec, (int64_t)HOUR_TO_SEC(timezone));
+        return settimeofday(&tv, NULL);
+    }
+    return -2;
+}
+
+int c_set_time(struct tm *tm, uint32_t us, float timezone) {
+    if(tm && tm->tm_year > 123) { /// > 2023
+        return c_set_time_ts(mktime(tm), us, timezone);
+    }
+    return -2;
+}
+
+int c_set_time_ms(int64_t ms, uint32_t us, float timezone) {
+    return c_set_time_ts((time_t)FROM_K_UL(ms), us, timezone);
+}
+
+struct tm * c_timeval_to_tm_utc(const struct timeval *tv, struct tm *result) {
+    time_t sec = tv->tv_sec;
+    // printf("[%s] tv_sec:%lld, tv_usec:%ld\n", __func__, sec, tv->tv_usec);
+    return gmtime_r(&sec, result);
+}
+
+struct tm * get_local_time(struct tm *timeinfo) {
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    c_timeval_to_tm_utc(&tv, timeinfo);
+    return timeinfo;
 }
 
 esp_err_t task_memory_info(const char * task_name) {
