@@ -32,18 +32,21 @@ extern "C" {
 // check if a character is a digit
 #define IS_ALNUM(x) (((x)>='a' && (x) <= 'z')) ||((x)>='A' && (x) <= 'Z') || (((x)>='0' && (x) <= '9'))
 
+#ifndef BIT
+#define BIT(x) (1UL << (uint8_t)(x))
+#endif
 // get a bit from a variable (bit 0-7)
-#define BIT_GET(var, bit)	( (var) & (1U << (uint8_t)(bit) ) )
-#define GETBIT(var, bit)	(BIT_GET(var, bit) ? 1 : 0 )
+#define BIT_GET(var, nr)	( (var) & BIT(nr) )
+#define GETBIT(var, nr)	(BIT_GET(var, nr) ? 1 : 0 )
 // set a bit to 1 (bit 0-7)
-#define BIT_SET(var, bit)	((var) |= (1U << (uint8_t)(bit)))
-#define SETBIT(var, bit)	BIT_SET(var, bit)
+#define BIT_SET(var, nr)	((var) |= BIT(nr))
+#define SETBIT(var, nr)	BIT_SET(var, nr)
 // set a bit to 0 (bit 0-7)
-#define BIT_CLR(var, bit)	((var) &= (~(1U << (uint8_t)(bit))))
-#define CLRBIT(var, bit)	BIT_CLR(var, bit)
+#define BIT_CLR(var, nr)	((var) &= (~BIT(nr)))
+#define CLRBIT(var, nr)	BIT_CLR(var, nr)
 // toggle a bit (bit 0-7)
-#define BIT_TGL(var, bit)	((var) ^= (1U << (uint8_t)(bit)))
-#define FLIPBIT(var, bit)   BIT_TGL(var, bit)
+#define BIT_TGL(var, nr)	((var) ^= BIT(nr))
+#define FLIPBIT(var, nr)   BIT_TGL(var, nr)
 
 #define STRINGIFY_(x) #x
 #define STRINGIFY(x) STRINGIFY_(x),
@@ -107,6 +110,9 @@ enum units_e {
 #define METERS_PER_LATITUDE_DEGREE 111195.0f
 #define DEG_TO_METERS(x) ((x) * POW_2(METERS_PER_LATITUDE_DEGREE))
 #define EARTH_RADIUS_M 6371000.0
+#define ROUND_UP_TO_8(x)   (((x) + 7) & ~7U)  // Align to nearest 8 bits
+// alternative: #define BYTE_PADDING(w) (((w + 7u) >> 3u) << 3u)
+
 typedef struct m_config_item_s {
     const char * name;
     int pos;
@@ -125,8 +131,9 @@ struct tm * c_timeval_to_tm_utc(const struct timeval *tv, struct tm *result);
 esp_err_t task_memory_info(const char * task_name);
 #if (C_LOG_LEVEL < 3  || defined(DEBUG))
 esp_err_t tasks_memory_info();
-#endif
 esp_err_t task_top(void);
+#endif
+esp_err_t mem_info();
 int32_t smooth(const int32_t * array, const int32_t index, const uint32_t size, const uint8_t window_size);
 
 // unsigned long get_micros();
@@ -163,6 +170,10 @@ inline void str_tolower(char *s) {
         if (*s >= 'A' && *s <= 'Z') *s += 32;
         s++;
     }
+}
+
+inline float get_distance_m(int distance, int output_rate) {
+     return MM_TO_M(distance) / output_rate;
 }
 
 #ifdef __cplusplus

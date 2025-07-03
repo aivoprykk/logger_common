@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <string.h>
 #include "esp_timer.h"
+#include "esp_system.h"
+#include "esp_heap_caps.h"
 
 #if (CONFIG_LOGGER_COMMON_LOG_LEVEL < 2 || CONFIG_LOGGER_GLOBAL_LOG_LEVEL < 2)
 static const char * const _logger_event_strings[] = {
@@ -55,6 +57,17 @@ struct tm * get_local_time(struct tm *timeinfo) {
 
 esp_err_t task_memory_info(const char * task_name) {
     printf("*** Task %s (%s) stack High Water Mark: %u bytes ***\n", pcTaskGetName(NULL), task_name, uxTaskGetStackHighWaterMark(NULL));
+    return ESP_OK;
+}
+
+esp_err_t mem_info(void) {
+    printf("*** Heap: free: %lu b, minfree: %lu b, internal: %zu / %zu b, external: %zu / %zu b ***\n", 
+        esp_get_free_heap_size(), 
+        esp_get_minimum_free_heap_size(), 
+        heap_caps_get_total_size(MALLOC_CAP_INTERNAL), 
+        heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
+        heap_caps_get_total_size(MALLOC_CAP_SPIRAM), 
+        heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
     return ESP_OK;
 }
 
