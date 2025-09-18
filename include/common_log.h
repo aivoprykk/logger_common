@@ -11,7 +11,7 @@ extern "C" {
 
 #if (C_LOG_LEVEL <= 4) // 4 - error
 #ifndef LOG_ERR
-#define LOG_ERR(a, b, ...) ESP_LOGE(a, b, __VA_ARGS__)
+#define LOG_ERR(a, b, ...) ESP_LOGE(a, b, ##__VA_ARGS__)
 #endif
 #define ELOG LOG_ERR
 #endif
@@ -23,10 +23,10 @@ extern "C" {
 #endif
 #ifndef MEAS_END
 #define MEAS_END(a, b, ...) \
-    ESP_LOGI(a, b, __VA_ARGS__, (esp_timer_get_time() - _start))
+    ESP_LOGI(a, b, ##__VA_ARGS__, (esp_timer_get_time() - _start))
 #endif
 #ifndef LOG_WARN
-#define LOG_WARN(a, b, ...) ESP_LOGW(a, b, __VA_ARGS__)
+#define LOG_WARN(a, b, ...) ESP_LOGW(a, b, ##__VA_ARGS__)
 #endif
 #define WLOG LOG_WARN
 #define WMEAS_START MEAS_START
@@ -35,7 +35,7 @@ extern "C" {
 
 #if (C_LOG_LEVEL <= 2) // 2 - info
 #ifndef LOG_INFO
-#define LOG_INFO(a, b, ...) ESP_LOGI(a, b, __VA_ARGS__)
+#define LOG_INFO(a, b, ...) ESP_LOGI(a, b, ##__VA_ARGS__)
 #endif
 #define ILOG LOG_INFO
 #define IMEAS_START MEAS_START
@@ -45,7 +45,7 @@ extern "C" {
 #if (C_LOG_LEVEL <= 1) // 1 - debug
 #define LOG_LOCAL_LEVEL ESP_LOG_DEBUG
 #ifndef LOG_DEBUG
-#define LOG_DEBUG(a, b, ...) printf(b, __VA_ARGS__)
+#define LOG_DEBUG(a, b, ...) printf(b "\n", ##__VA_ARGS__)
 #endif
 #define DLOG LOG_DEBUG
 #define DMEAS_START MEAS_START
@@ -54,7 +54,7 @@ extern "C" {
 
 #if (C_LOG_LEVEL < 1) // 0 - trace
 #ifndef LOG_TRACE
-#define LOG_TRACE(a, b, ...) printf(b, __VA_ARGS__)
+#define LOG_TRACE(a, b, ...) printf(b, ##__VA_ARGS__)
 #endif
 #define TLOG LOG_TRACE
 #define TMEAS_START MEAS_START
