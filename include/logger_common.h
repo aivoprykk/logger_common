@@ -35,17 +35,26 @@ extern "C" {
 #ifndef BIT
 #define BIT(x) (1UL << (uint8_t)(x))
 #endif
-// get a bit from a variable (bit 0-7)
+
+// BIT_CHECK get a bit from a variable (bit 0-7)
+#ifndef BIT_GET
 #define BIT_GET(var, nr)	( (var) & BIT(nr) )
+#endif
 #define GETBIT(var, nr)	(BIT_GET(var, nr) ? 1 : 0 )
-// set a bit to 1 (bit 0-7)
+// BIT_SET set a bit to 1 (bit 0-7)
+#ifndef BIT_SET
 #define BIT_SET(var, nr)	((var) |= BIT(nr))
+#endif
 #define SETBIT(var, nr)	BIT_SET(var, nr)
-// set a bit to 0 (bit 0-7)
+// BIT_CLEAR a bit to 0 (bit 0-7)
+#ifndef BIT_CLR
 #define BIT_CLR(var, nr)	((var) &= (~BIT(nr)))
+#endif
 #define CLRBIT(var, nr)	BIT_CLR(var, nr)
-// toggle a bit (bit 0-7)
+// BIT_FLIP toggle a bit (bit 0-7)
+#ifndef BIT_TGL
 #define BIT_TGL(var, nr)	((var) ^= BIT(nr))
+#endif
 #define FLIPBIT(var, nr)   BIT_TGL(var, nr)
 
 #define STRINGIFY_(x) #x
@@ -138,7 +147,7 @@ int32_t smooth(const int32_t * array, const int32_t index, const uint32_t size, 
 
 // unsigned long get_micros();
 unsigned long get_millis();
-#define DELAY_MS(x) vTaskDelay((ms + (portTICK_PERIOD_MS - 1)) / portTICK_PERIOD_MS)
+#define DELAY_MS(x) vTaskDelay((x + (portTICK_PERIOD_MS - 1)) / portTICK_PERIOD_MS)
 inline void delay_ms(uint32_t ms) { DELAY_MS(ms); }
 
 inline void uint8_to_hex_string(uint8_t value, char *hex_str) {

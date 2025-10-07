@@ -72,6 +72,7 @@ static int find_available_buffer(logger_buffer_size_t min_size_type) {
 }
 
 esp_err_t logger_buffer_pool_init(void) {
+    ESP_LOGI(TAG, "[%s] initialized: %d", __FUNCTION__, g_buffer_pool.initialized);
     if (g_buffer_pool.initialized) {
         return ESP_OK;
     }
@@ -104,37 +105,30 @@ esp_err_t logger_buffer_pool_init(void) {
 }
 
 esp_err_t logger_buffer_pool_deinit(void) {
-    if (!g_buffer_pool.initialized) {
-        return ESP_OK;
-    }
-
-    if (xSemaphoreTake(g_buffer_pool.mutex, pdMS_TO_TICKS(1000)) != pdTRUE) {
-        ESP_LOGE(TAG, "Failed to acquire mutex for deinit");
-        return ESP_FAIL;
-    }
-
-    // Check for leaked buffers
-    int leaked_count = 0;
-    for (int i = 0; i < LOGGER_BUFFER_POOL_COUNT; i++) {
-        if (g_buffer_pool.in_use[i]) {
-            leaked_count++;
-            ESP_LOGW(TAG, "Buffer %d still in use during deinit (usage: %d, id: %lu)", 
-                     i, g_buffer_pool.buffer_usage[i], g_buffer_pool.allocation_ids[i]);
+    ESP_LOGI(TAG, "[%s] initialized: %d", __FUNCTION__, g_buffer_pool.initialized);
+    if (!g_buffer_pool.initialized)  return ESP_OK;
+    if (xSemaphoreTake(g_buffer_pool.mutex, pdMS_TO_TICKS(1000)) == pdTRUE) {
+        // Check for leaked buffers
+        int leaked_count = 0;
+        for (int i = 0; i < LOGGER_BUFFER_POOL_COUNT; i++) {
+            if (g_buffer_pool.in_use[i]) {
+                leaked_count++;
+                ESP_LOGW(TAG, "Buffer %d still in use during deinit (usage: %d, id: %lu)", 
+                        i, g_buffer_pool.buffer_usage[i], g_buffer_pool.allocation_ids[i]);
+            }
         }
+        if (leaked_count > 0) {
+            ESP_LOGW(TAG, "Found %d leaked buffers during deinit", leaked_count);
+        }
+
+        xSemaphoreGive(g_buffer_pool.mutex);
     }
-
-    if (leaked_count > 0) {
-        ESP_LOGW(TAG, "Found %d leaked buffers during deinit", leaked_count);
-    }
-
-    g_buffer_pool.initialized = false;
-    xSemaphoreGive(g_buffer_pool.mutex);
-
     // Delete mutex
     vSemaphoreDelete(g_buffer_pool.mutex);
     g_buffer_pool.mutex = NULL;
-
     ESP_LOGI(TAG, "Buffer pool deinitialized");
+    g_buffer_pool.initialized = false;
+    
     return ESP_OK;
 }
 
