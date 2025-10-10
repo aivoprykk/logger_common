@@ -87,7 +87,7 @@ esp_err_t task_top() {
 #endif
 
 // unsigned long IRAM_ATTR get_micros() { return (unsigned long) (esp_timer_get_time()); }
-unsigned long IRAM_ATTR get_millis() { return (unsigned long) (esp_timer_get_time() / 1000); }
+unsigned long IRAM_ATTR get_millis() { return (unsigned long) (esp_timer_get_time() / 1000UL); }
 
 int32_t smooth(const int32_t * array, const int32_t index, const uint32_t size, const uint8_t window_size) {
     if(index < 0)

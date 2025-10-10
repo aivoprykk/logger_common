@@ -2,8 +2,7 @@
 idf_component_register(
     SRCS "logger_common.c" "common_cfg.c" "logger_buffer_pool.c"
     INCLUDE_DIRS "include"
-    REQUIRES esp_system esp_event
-    PRIV_REQUIRES esp_timer
+    REQUIRES esp_system esp_event esp_timer
 )
 
 if(CONFIG_GPS_LOG_USE_CJSON)
