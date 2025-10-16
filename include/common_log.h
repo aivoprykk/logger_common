@@ -11,10 +11,16 @@ extern "C" {
 
 // String suppression for binary size optimization
 // When log level is higher than the message level, completely suppress strings from binary
+#define LOG_ERR_NUM 4
+#define LOG_WARN_NUM 3
+#define LOG_INFO_NUM 2
+#define LOG_DEBUG_NUM 1
+#define LOG_TRACE_NUM 0
 
-#if (C_LOG_LEVEL <= 4) // 4 - error
+
+#if (C_LOG_LEVEL <= LOG_ERR_NUM) // 4 - error
 #ifndef LOG_ERR
-#define LOG_ERR(a, b, ...) ESP_LOGE(a, b, ##__VA_ARGS__)
+#define LOG_ERR(a, fmt, ...) ESP_LOGE(a, fmt, ##__VA_ARGS__)
 #endif
 #define ELOG LOG_ERR
 #else
@@ -22,89 +28,120 @@ extern "C" {
 #define ELOG(a, b, ...) ((void)0)
 #endif
 
-#if (C_LOG_LEVEL <= 3) // 3 - warn
-#include "esp_timer.h"
-#ifndef MEAS_START
-#define MEAS_START() uint64_t _start = (esp_timer_get_time())
-#endif
-#ifndef MEAS_END
-#define MEAS_END(a, b, ...) \
-    ESP_LOGI(a, b, ##__VA_ARGS__, (esp_timer_get_time() - _start))
-#endif
+#if (C_LOG_LEVEL <= LOG_WARN_NUM) // 3 - warn
 #ifndef LOG_WARN
-#define LOG_WARN(a, b, ...) ESP_LOGW(a, b, ##__VA_ARGS__)
+#define LOG_WARN(tag, fmt, ...) ESP_LOGW(tag, fmt, ##__VA_ARGS__)
 #endif
 #define WLOG LOG_WARN
-#define WMEAS_START MEAS_START
-#define WMEAS_END MEAS_END
 #else
 #define LOG_WARN(a, b, ...) ((void)0)
 #define WLOG(a, b, ...) ((void)0)
-#define MEAS_START() ((void)0)
-#define MEAS_END(a, b, ...) ((void)0)
-#define WMEAS_START() ((void)0)
-#define WMEAS_END(a, b, ...) ((void)0)
 #endif
 
-#if (C_LOG_LEVEL <= 2) // 2 - info
+#if (C_LOG_LEVEL <= LOG_INFO_NUM) // 2 - info
 #ifndef LOG_INFO
-#define LOG_INFO(a, b, ...) ESP_LOGI(a, b, ##__VA_ARGS__)
+#define LOG_INFO(a, fmt, ...) ESP_LOGI(a, fmt, ##__VA_ARGS__)
 #endif
 #define ILOG LOG_INFO
-#define IMEAS_START MEAS_START
-#define IMEAS_END MEAS_END
+
+#include "esp_timer.h"
+#ifndef IMEAS_START
+#define IMEAS_START() uint64_t _start = (esp_timer_get_time())
+#endif
+#ifndef IMEAS_END
+#define IMEAS_END(tag) \
+    ESP_LOGI(tag, "[%s] took %llu us", __func__, (esp_timer_get_time() - _start))
+#endif
+#ifndef IMEAS_END_ARGS
+#define IMEAS_END_ARGS(tag, fmt, ...) \
+    ESP_LOGI(tag, "[%s] took %llu us " fmt, __func__, (esp_timer_get_time() - _start), ##__VA_ARGS__)
+#endif
+
 #else
 #define LOG_INFO(a, b, ...) ((void)0)
 #define ILOG(a, b, ...) ((void)0)
 #define IMEAS_START() ((void)0)
-#define IMEAS_END(a, b, ...) ((void)0)
+#define IMEAS_END(a) ((void)0)
+#define IMEAS_END_ARGS(a, b, ...) ((void)0)
 #endif
 
-#if (C_LOG_LEVEL <= 1) // 1 - debug
-#define LOG_LOCAL_LEVEL ESP_LOG_DEBUG
+#if (C_LOG_LEVEL <= LOG_DEBUG_NUM) // 1 - debug
 #ifndef LOG_DEBUG
-#define LOG_DEBUG(a, b, ...) printf("%s: " b "\n", a, ##__VA_ARGS__)
+#define LOG_DEBUG(a, fmt, ...) printf("%s: " fmt "\n", a, ##__VA_ARGS__)
 #endif
 #define DLOG LOG_DEBUG
-#define DMEAS_START MEAS_START
-#define DMEAS_END MEAS_END
+
+#define DMEAS_START IMEAS_START
+#ifndef DMEAS_END
+#define DMEAS_END(tag) \
+    printf("[%s] took %llu us\n", __func__, (esp_timer_get_time() - _start))
+#endif
+#ifndef DMEAS_END_ARGS
+#define DMEAS_END_ARGS(tag, fmt, ...) \
+    printf("[%s] took %llu us " fmt "\n", __func__, (esp_timer_get_time() - _start), ##__VA_ARGS__)
+#endif
+
 #else
 #define LOG_DEBUG(a, b, ...) ((void)0)
 #define DLOG(a, b, ...) ((void)0)
 #define DMEAS_START() ((void)0)
-#define DMEAS_END(a, b, ...) ((void)0)
+#define DMEAS_END(a) ((void)0)
+#define DMEAS_END_ARGS(a, b, ...) ((void)0)
 #endif
 
-#if (C_LOG_LEVEL < 1) // 0 - trace
+#if (C_LOG_LEVEL < LOG_TRACE_NUM) // 0 - trace
 #ifndef LOG_TRACE
-#define LOG_TRACE(a, b, ...) printf(b, ##__VA_ARGS__)
+#define LOG_TRACE(a, fmt, ...) printf("%s: " fmt "\n", a, ##__VA_ARGS__)
 #endif
 #define TLOG LOG_TRACE
-#define TMEAS_START MEAS_START
-#define TMEAS_END MEAS_END
+#define TMEAS START IMEAS_START
+#define TMEAS_END DMEAS_END
+#define TMEAS_END_ARGS DMEAS_END_ARGS
 #else
 #define LOG_TRACE(a, b, ...) ((void)0)
 #define TLOG(a, b, ...) ((void)0)
 #define TMEAS_START() ((void)0)
-#define TMEAS_END(a, b, ...) ((void)0)
+#define TMEAS_END(a) ((void)0)
+#define TMEAS_END_ARGS(a, b, ...) ((void)0)
+#endif
+
+#if (C_LOG_LEVEL < LOG_TRACE_NUM) // 0 - trace
+#define LOG_LOCAL_LEVEL ESP_LOG_TRACE
+#elif (C_LOG_LEVEL == LOG_DEBUG_NUM)
+#define LOG_LOCAL_LEVEL ESP_LOG_DEBUG
+#elif (C_LOG_LEVEL == LOG_INFO_NUM)
+#define LOG_LOCAL_LEVEL ESP_LOG_INFO
+#elif (C_LOG_LEVEL == LOG_WARN_NUM)
+#define LOG_LOCAL_LEVEL ESP_LOG_WARN
+#elif (C_LOG_LEVEL == LOG_ERR_NUM)
+#define LOG_LOCAL_LEVEL ESP_LOG_ERROR
+#else
+#define LOG_LOCAL_LEVEL ESP_LOG_NONE
 #endif
 
 #include "esp_log.h"
 
 // Function entry logging macros
-#if (C_LOG_LEVEL <= 1) // 1 - debug level for function entries
+#if (C_LOG_LEVEL <= LOG_DEBUG_NUM) // 1 - debug level for function entries
 #define FUNC_ENTRYD(tag) DLOG(tag, "[%s]", __func__)
 #define FUNC_ENTRY_ARGSD(tag, fmt, ...) DLOG(tag, "[%s] " fmt, __func__, ##__VA_ARGS__)
 #else
 #define FUNC_ENTRYD(tag) ((void)0)
 #define FUNC_ENTRY_ARGSD(tag, fmt, ...) ((void)0)
 #endif
-#if (C_LOG_LEVEL <= 2) // 2 - info level for function entries
+#if (C_LOG_LEVEL <= LOG_INFO_NUM) // 2 - info level for function entries
 #define FUNC_ENTRY(tag) ILOG(tag, "[%s]", __func__)
 #define FUNC_ENTRY_ARGS(tag, fmt, ...) ILOG(tag, "[%s] " fmt, __func__, ##__VA_ARGS__)
 #else
 #define FUNC_ENTRY(tag) ((void)0)
 #define FUNC_ENTRY_ARGS(tag, fmt, ...) ((void)0)
+#endif
+#if (C_LOG_LEVEL <= LOG_WARN_NUM) // 3 - warn level for function entries
+#define FUNC_ENTRYW(tag) WLOG(tag, "[%s]", __func__)
+#define FUNC_ENTRY_ARGSW(tag, fmt, ...) WLOG(tag, "[%s] " fmt, __func__, ##__VA_ARGS__)
+#else
+#define FUNC_ENTRYW(tag) ((void)0)
+#define FUNC_ENTRY_ARGSW(tag, fmt, ...) ((void)0)
 #endif
 
 #ifdef __cplusplus
