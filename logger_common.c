@@ -55,11 +55,14 @@ struct tm * get_local_time(struct tm *timeinfo) {
     return timeinfo;
 }
 
+#if (C_LOG_LEVEL <= LOG_INFO_NUM)
 esp_err_t task_memory_info(const char * task_name) {
     printf("*** Task %s (%s) stack High Water Mark: %u bytes ***\n", pcTaskGetName(NULL), task_name, uxTaskGetStackHighWaterMark(NULL));
     return ESP_OK;
 }
+#endif
 
+#if (C_LOG_LEVEL <= LOG_WARN_NUM)
 esp_err_t mem_info(void) {
     printf("*** Heap: free: %lu b, minfree: %lu b, internal: %zu / %zu b, external: %zu / %zu b ***\n", 
         esp_get_free_heap_size(), 
@@ -70,17 +73,28 @@ esp_err_t mem_info(void) {
         heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
     return ESP_OK;
 }
+#endif
 
-#if (C_LOG_LEVEL < 3)
+#if (C_LOG_LEVEL <= LOG_DEBUG_NUM)
 esp_err_t tasks_memory_info() {
     char str[40*uxTaskGetNumberOfTasks()+1];
     vTaskList(&(str[0]));
+    // fields:
+    // Task Name: Name of the task
+    // Task State: Current state: 'R' (Ready), 'B' (Blocked), 'S' (Suspended), 'D' (Deleted)
+    // Task Priority: Numeric priority level (0 = lowest)
+    // Stack High Water Mark: Minimum amount of stack space that has remained for the task since the task was created
+    // Task Number: Unique identifier for the task
     printf("******\n%s", str);
     return ESP_OK;
 }
 esp_err_t task_top() {
     char str[40*uxTaskGetNumberOfTasks()+1];
     vTaskGetRunTimeStats(&(str[0]));
+    // fields: 
+    // Name of the task,
+    // Time (in ticks),
+    // Percentage of total run time
     printf("******\n%s", str);
     return ESP_OK;
 }

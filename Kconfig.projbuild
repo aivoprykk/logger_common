@@ -70,6 +70,8 @@ menu "ESPIDF Logger Common Configuration"
                 Specify how important log should be added.
             config LOGGER_GLOBAL_LOG_LEVEL_TRACE
                 bool "TRACE: A lot of logs to give detailed information"
+            config LOGGER_GLOBAL_LOG_LEVEL_DEBUG
+                bool "DEBUG: Log general debug info"
             config LOGGER_GLOBAL_LOG_LEVEL_INFO
                 bool "INFO: Log important events"
             config LOGGER_GLOBAL_LOG_LEVEL_WARN
@@ -84,11 +86,12 @@ menu "ESPIDF Logger Common Configuration"
         config LOGGER_GLOBAL_LOG_LEVEL
         int
         default 0 if LOGGER_GLOBAL_LOG_LEVEL_TRACE
-        default 1 if LOGGER_GLOBAL_LOG_LEVEL_INFO
-        default 2 if LOGGER_GLOBAL_LOG_LEVEL_WARN
-        default 3 if LOGGER_GLOBAL_LOG_LEVEL_ERROR
-        default 4 if LOGGER_GLOBAL_LOG_LEVEL_USER
-        default 5 if LOGGER_GLOBAL_LOG_LEVEL_NONE
+        default 1 if LOGGER_GLOBAL_LOG_LEVEL_DEBUG
+        default 2 if LOGGER_GLOBAL_LOG_LEVEL_INFO
+        default 3 if LOGGER_GLOBAL_LOG_LEVEL_WARN
+        default 4 if LOGGER_GLOBAL_LOG_LEVEL_ERROR
+        default 5 if LOGGER_GLOBAL_LOG_LEVEL_USER
+        default 6 if LOGGER_GLOBAL_LOG_LEVEL_NONE
     endif
     choice
         bool "Default log verbosity"
@@ -96,24 +99,27 @@ menu "ESPIDF Logger Common Configuration"
         help
             Specify how important log should be added.
         config LOGGER_COMMON_LOG_LEVEL_TRACE
-            bool "TRACE: A lot of logs to give detailed information"
+            bool "TRACE: Log more to give detailed information"
+        config LOGGER_COMMON_LOG_LEVEL_DEBUG
+            bool "DEBUG: Log general debug info"
         config LOGGER_COMMON_LOG_LEVEL_INFO
-            bool "INFO: Log important events"
+            bool "INFO:  Log important events"
         config LOGGER_COMMON_LOG_LEVEL_WARN
-            bool "WARN: Log if something unwanted happened but didn't cause a problem"
+            bool "WARN:  Log if something unwanted happened but didn't cause a problem"
         config LOGGER_COMMON_LOG_LEVEL_ERROR
             bool "ERROR: Only critical issues, when the system may fail"
         config LOGGER_COMMON_LOG_LEVEL_USER
-            bool "USER: Only logs added by the user"
+            bool "USER:  Only logs added by the user"
         config LOGGER_COMMON_LOG_LEVEL_NONE
-            bool "NONE: Do not log anything"
+            bool "NONE:  Do not log anything"
     endchoice
     config LOGGER_COMMON_LOG_LEVEL
         int
         default 0 if LOGGER_COMMON_LOG_LEVEL_TRACE
-        default 1 if LOGGER_COMMON_LOG_LEVEL_INFO
-        default 2 if LOGGER_COMMON_LOG_LEVEL_WARN
-        default 3 if LOGGER_COMMON_LOG_LEVEL_ERROR
-        default 4 if LOGGER_COMMON_LOG_LEVEL_USER
-        default 5 if LOGGER_COMMON_LOG_LEVEL_NONE
+        default 1 if LOGGER_COMMON_LOG_LEVEL_DEBUG
+        default 2 if LOGGER_COMMON_LOG_LEVEL_INFO
+        default 3 if LOGGER_COMMON_LOG_LEVEL_WARN
+        default 4 if LOGGER_COMMON_LOG_LEVEL_ERROR
+        default 5 if LOGGER_COMMON_LOG_LEVEL_USER
+        default 6 if LOGGER_COMMON_LOG_LEVEL_NONE
 endmenu

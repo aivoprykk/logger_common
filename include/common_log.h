@@ -17,10 +17,23 @@ extern "C" {
 #define LOG_DEBUG_NUM 1
 #define LOG_TRACE_NUM 0
 
+#ifdef USE_ESP_LOG
+#define LOGE(tag, fmt, ...) ESP_LOGE(tag, fmt, ##__VA_ARGS__)
+#define LOGW(tag, fmt, ...) ESP_LOGW(tag, fmt, ##__VA_ARGS__)
+#define LOGI(tag, fmt, ...) ESP_LOGI(tag, fmt, ##__VA_ARGS__)
+#define LOGD(tag, fmt, ...) ESP_LOGD(tag, fmt, ##__VA_ARGS__)
+#define LOGV(tag, fmt, ...) ESP_LOGV(tag, fmt, ##__VA_ARGS__)
+#else
+#define LOGE(tag, fmt, ...) printf("E: %s: " fmt "\n", tag, ##__VA_ARGS__)
+#define LOGW(tag, fmt, ...) printf("W: %s: " fmt "\n", tag, ##__VA_ARGS__)
+#define LOGI(tag, fmt, ...) printf("I: %s: " fmt "\n", tag, ##__VA_ARGS__)
+#define LOGD(tag, fmt, ...) printf("D: %s: " fmt "\n", tag, ##__VA_ARGS__)
+#define LOGV(tag, fmt, ...) printf("T: %s: " fmt "\n", tag, ##__VA_ARGS__)
+#endif
 
 #if (C_LOG_LEVEL <= LOG_ERR_NUM) // 4 - error
 #ifndef LOG_ERR
-#define LOG_ERR(a, fmt, ...) ESP_LOGE(a, fmt, ##__VA_ARGS__)
+#define LOG_ERR(a, fmt, ...) LOGE(a, fmt, ##__VA_ARGS__)
 #endif
 #define ELOG LOG_ERR
 #else
@@ -30,7 +43,7 @@ extern "C" {
 
 #if (C_LOG_LEVEL <= LOG_WARN_NUM) // 3 - warn
 #ifndef LOG_WARN
-#define LOG_WARN(tag, fmt, ...) ESP_LOGW(tag, fmt, ##__VA_ARGS__)
+#define LOG_WARN(tag, fmt, ...) LOGW(tag, fmt, ##__VA_ARGS__)
 #endif
 #define WLOG LOG_WARN
 #else
@@ -40,7 +53,7 @@ extern "C" {
 
 #if (C_LOG_LEVEL <= LOG_INFO_NUM) // 2 - info
 #ifndef LOG_INFO
-#define LOG_INFO(a, fmt, ...) ESP_LOGI(a, fmt, ##__VA_ARGS__)
+#define LOG_INFO(a, fmt, ...) LOGI(a, fmt, ##__VA_ARGS__)
 #endif
 #define ILOG LOG_INFO
 
@@ -50,11 +63,11 @@ extern "C" {
 #endif
 #ifndef IMEAS_END
 #define IMEAS_END(tag) \
-    ESP_LOGI(tag, "[%s] took %llu us", __func__, (esp_timer_get_time() - _start))
+    ILOG(tag, "[%s] took %llu us", __func__, (esp_timer_get_time() - _start))
 #endif
 #ifndef IMEAS_END_ARGS
 #define IMEAS_END_ARGS(tag, fmt, ...) \
-    ESP_LOGI(tag, "[%s] took %llu us " fmt, __func__, (esp_timer_get_time() - _start), ##__VA_ARGS__)
+    ILOG(tag, "[%s] took %llu us " fmt, __func__, (esp_timer_get_time() - _start), ##__VA_ARGS__)
 #endif
 
 #else
@@ -67,18 +80,18 @@ extern "C" {
 
 #if (C_LOG_LEVEL <= LOG_DEBUG_NUM) // 1 - debug
 #ifndef LOG_DEBUG
-#define LOG_DEBUG(a, fmt, ...) printf("%s: " fmt "\n", a, ##__VA_ARGS__)
+#define LOG_DEBUG(tag, fmt, ...) LOGD(tag, fmt, ##__VA_ARGS__)
 #endif
 #define DLOG LOG_DEBUG
 
 #define DMEAS_START IMEAS_START
 #ifndef DMEAS_END
 #define DMEAS_END(tag) \
-    printf("[%s] took %llu us\n", __func__, (esp_timer_get_time() - _start))
+    DLOG(tag, "[%s] took %llu us", __func__, (esp_timer_get_time() - _start))
 #endif
 #ifndef DMEAS_END_ARGS
 #define DMEAS_END_ARGS(tag, fmt, ...) \
-    printf("[%s] took %llu us " fmt "\n", __func__, (esp_timer_get_time() - _start), ##__VA_ARGS__)
+    DLOG(tag, "[%s] took %llu us " fmt, __func__, (esp_timer_get_time() - _start), ##__VA_ARGS__)
 #endif
 
 #else
@@ -89,12 +102,12 @@ extern "C" {
 #define DMEAS_END_ARGS(a, b, ...) ((void)0)
 #endif
 
-#if (C_LOG_LEVEL < LOG_TRACE_NUM) // 0 - trace
+#if (C_LOG_LEVEL == LOG_TRACE_NUM) // 0 - trace
 #ifndef LOG_TRACE
-#define LOG_TRACE(a, fmt, ...) printf("%s: " fmt "\n", a, ##__VA_ARGS__)
+#define LOG_TRACE(tag, fmt, ...) LOGV(tag, fmt, ##__VA_ARGS__)
 #endif
 #define TLOG LOG_TRACE
-#define TMEAS START IMEAS_START
+#define TMEAS_START IMEAS_START
 #define TMEAS_END DMEAS_END
 #define TMEAS_END_ARGS DMEAS_END_ARGS
 #else
@@ -105,8 +118,9 @@ extern "C" {
 #define TMEAS_END_ARGS(a, b, ...) ((void)0)
 #endif
 
-#if (C_LOG_LEVEL < LOG_TRACE_NUM) // 0 - trace
-#define LOG_LOCAL_LEVEL ESP_LOG_TRACE
+#ifdef USE_ESP_LOG
+#if (C_LOG_LEVEL == LOG_TRACE_NUM) // 0 - trace
+#define LOG_LOCAL_LEVEL ESP_LOG_VERBOSE
 #elif (C_LOG_LEVEL == LOG_DEBUG_NUM)
 #define LOG_LOCAL_LEVEL ESP_LOG_DEBUG
 #elif (C_LOG_LEVEL == LOG_INFO_NUM)
@@ -120,8 +134,16 @@ extern "C" {
 #endif
 
 #include "esp_log.h"
+#endif
 
 // Function entry logging macros
+#if (C_LOG_LEVEL <= LOG_TRACE_NUM) // 1 - debug level for function entries
+#define FUNC_ENTRYT(tag) TLOG(tag, "[%s]", __func__)
+#define FUNC_ENTRY_ARGT(tag, fmt, ...) TLOG(tag, "[%s] " fmt, __func__, ##__VA_ARGS__)
+#else
+#define FUNC_ENTRYT(tag) ((void)0)
+#define FUNC_ENTRY_ARGT(tag, fmt, ...) ((void)0)
+#endif
 #if (C_LOG_LEVEL <= LOG_DEBUG_NUM) // 1 - debug level for function entries
 #define FUNC_ENTRYD(tag) DLOG(tag, "[%s]", __func__)
 #define FUNC_ENTRY_ARGSD(tag, fmt, ...) DLOG(tag, "[%s] " fmt, __func__, ##__VA_ARGS__)
@@ -138,10 +160,10 @@ extern "C" {
 #endif
 #if (C_LOG_LEVEL <= LOG_WARN_NUM) // 3 - warn level for function entries
 #define FUNC_ENTRYW(tag) WLOG(tag, "[%s]", __func__)
-#define FUNC_ENTRY_ARGSW(tag, fmt, ...) WLOG(tag, "[%s] " fmt, __func__, ##__VA_ARGS__)
+#define FUNC_ENTRY_ARGW(tag, fmt, ...) WLOG(tag, "[%s] " fmt, __func__, ##__VA_ARGS__)
 #else
 #define FUNC_ENTRYW(tag) ((void)0)
-#define FUNC_ENTRY_ARGSW(tag, fmt, ...) ((void)0)
+#define FUNC_ENTRY_ARGW(tag, fmt, ...) ((void)0)
 #endif
 
 #ifdef __cplusplus

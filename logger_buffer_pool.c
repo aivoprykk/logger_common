@@ -72,7 +72,7 @@ static int find_available_buffer(logger_buffer_size_t min_size_type) {
 }
 
 esp_err_t logger_buffer_pool_init(void) {
-    ESP_LOGI(TAG, "[%s] initialized: %d", __FUNCTION__, g_buffer_pool.initialized);
+    // ESP_LOGI(TAG, "[%s] initialized: %d", __FUNCTION__, g_buffer_pool.initialized);
     if (g_buffer_pool.initialized) {
         return ESP_OK;
     }

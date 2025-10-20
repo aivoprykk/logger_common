@@ -137,12 +137,24 @@ int c_set_time_ts(int64_t sec, uint32_t us, float timezone);
 int c_set_time_ms(int64_t ms, uint32_t us, float timezone);
 struct tm * c_timeval_to_tm_utc(const struct timeval *tv, struct tm *result);
 
+#if (C_LOG_LEVEL <= LOG_INFO_NUM)
 esp_err_t task_memory_info(const char * task_name);
-#if (C_LOG_LEVEL < 3  || defined(DEBUG))
-esp_err_t tasks_memory_info();
-esp_err_t task_top(void);
+#else
+#define task_memory_info(x) (void)(0)
 #endif
-esp_err_t mem_info();
+
+#if (C_LOG_LEVEL <= LOG_DEBUG_NUM)
+esp_err_t tasks_memory_info(void);
+esp_err_t task_top(void);
+#else
+#define tasks_memory_info() (void)(0)
+#define task_top() (void)(0)
+#endif
+#if (C_LOG_LEVEL <= LOG_WARN_NUM)
+esp_err_t mem_info(void);
+#else
+#define mem_info() (void)(0)
+#endif
 int32_t smooth(const int32_t * array, const int32_t index, const uint32_t size, const uint8_t window_size);
 
 // unsigned long get_micros();
