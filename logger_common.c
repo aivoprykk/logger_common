@@ -136,3 +136,24 @@ int smooth_int(const int * array, const int32_t index, const uint32_t size, cons
     }
     return count ? sum / count : 0;
 }
+
+uint8_t len_helper_u(uint64_t x) { 
+    if(x >= 100000u) {
+        if(x >= 10000000u) {
+            if(x >= 1000000000u) return 10;
+            if(x >= 100000000u) return 9;
+            return 8;
+        }
+        if(x >= 1000000u) return 7;
+        return 6;
+    } else {
+        if(x >= 1000u) {
+            if(x >= 10000u) return 5;
+            return 4;
+        } else {
+            if(x >= 100u) return 3;
+            if(x >= 10u) return 2;
+            return 1;
+        }
+    }
+}
