@@ -13,7 +13,7 @@ static const char * const _logger_event_strings[] = {
     LOGGER_EVENT_LIST(STRINGIFY)
 };
 const char * logger_event_strings(int id) {
-    return _logger_event_strings[id];
+    return id < lengthof(_logger_event_strings) ? _logger_event_strings[id] : "LOGGER_EVENT_UNKNOWN";
 }
 #else
 const char * logger_event_strings(int id) {

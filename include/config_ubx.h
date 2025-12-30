@@ -71,6 +71,8 @@ typedef enum ubx_msg_type_e {
     UBX_MSG_TYPE_LIST(ENUM_V)
 } ubx_msg_type_t;
 
+extern const char * const ubx_msg_type_strings[];
+
 #define UBX_EN_PIN_LEN 4
 
 #define CFG_UBX_PRIVATE_ITEM_LIST(l) \

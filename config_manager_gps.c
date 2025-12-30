@@ -248,7 +248,7 @@ static bool config_gps_set_item_impl(size_t index, uint16_t val, const char *str
         case cfg_gps_stat_screens: {// stat_screens
             FUNC_ENTRY_ARGSD(TAG, "Stat screens config change from %u to %hu.", g_rtc_config.gps.stat_screens, val);
             if (g_rtc_config.gps.stat_screens != val) {
-                g_rtc_config.gps.stat_screens = val;
+                g_rtc_config.gps.stat_screens = !val ? 1 : val; // Ensure at least one screen is enabled
                 changed = cfg_gps_stat_screens;
             }
             break;
@@ -465,4 +465,28 @@ bool config_stat_screen_set_next_value(int num) {
     FUNC_ENTRY_ARGSD(TAG, "index:%d", num);
     // printf("num:%d", num);
     return config_gps_set_item_impl(cfg_gps_stat_screens, config_stat_screen_get_next_value(num), NULL);
+}
+
+
+
+// Cycled forward: if idx >= count -> return 0; else return next enabled index after idx, wrapping.
+// Falls back to 0 if no enabled bits are present.
+int config_stat_screen_get_next_cycled(int idx) {
+    size_t count = gps_stat_screen_item_count;
+    if (count == 0) return -1;
+    if (idx >= (int)count) idx = -1;
+
+    // Search from the next position, with wrap-around
+    int start = idx;
+    for (size_t step = 1; step <= count; step++) {
+        int next = start + (int)step;
+        if (next >= (int)count) next -= (int)count;
+        if (GETBIT(g_rtc_config.gps.stat_screens, next)) {
+            FUNC_ENTRY_ARGSD(TAG, "next enabled idx: %d, value: %hu", next, g_rtc_config.gps.stat_screens);
+            return next;
+        }
+    }
+    // None enabled, fall back to 0
+    FUNC_ENTRY_ARGSD(TAG, "no enabled stats screens; fallback to 0");
+    return 0;
 }

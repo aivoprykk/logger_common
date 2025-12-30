@@ -164,6 +164,7 @@ uint16_t config_stat_screen_get_next_value(int num);
 bool config_stat_screen_set_next_value(int num);
 uint8_t config_gps_get_next_value(size_t index);
 bool config_gps_set_next_item(size_t index); // Cycle to next value (for UI)
+int config_stat_screen_get_next_cycled(int current);
 
 #ifdef __cplusplus
 }

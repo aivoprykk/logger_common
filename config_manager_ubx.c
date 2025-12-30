@@ -5,7 +5,6 @@
 static const char *TAG = "config_ubx";
 #define L(x) x,
 static const uint8_t sample_rate_values[] = {SAMPLE_RATE_VAL_LIST(L)};
-
 const char * const config_ubx_items[] = { CFG_UBX_ITEM_LIST(STRINGIFY) };
 const size_t config_ubx_item_count = sizeof(config_ubx_items) / sizeof(config_ubx_items[0]);
 
