@@ -36,7 +36,7 @@ bool get_main_item_descriptions(size_t index, struct strbf_s *sb) {
         case cfg_main_password3:
             strbf_puts(sb, "WiFi password for station mode (fourth network).");
             break;
-#if defined(CONFIG_LOGGER_BUTTON_GPIO_1)
+#if defined(CONFIG_LOGGER_BUTTON_GPIO_1) || defined(CONFIG_UBUTTON_GPIO_1)
         case cfg_main_gpio12_screens:
             strbf_puts(sb, "Bitfield for screens to cycle through using GPIO12 button.");
             break;
@@ -65,7 +65,7 @@ bool get_main_item_values(size_t index, struct strbf_s *sb) {
         case cfg_main_password3:
             // No specific values array
             break;
-#if defined(CONFIG_LOGGER_BUTTON_GPIO_1)
+#if defined(CONFIG_LOGGER_BUTTON_GPIO_1) || defined(CONFIG_UBUTTON_GPIO_1)
         case cfg_main_gpio12_screens:
             // No specific values array
             add_toggles_array(sb, screen_gpio12_items, screen_gpio12_item_count, 0);
@@ -119,7 +119,7 @@ bool config_main_value_str(size_t index, struct strbf_s *sb, uint8_t* type) {
             insert_json_string_value(sb, g_rtc_config.main.wifi_sta[3].password);
             *type = SCONFIG_ITEM_TYPE_STRING;
             break;
-#if defined(CONFIG_LOGGER_BUTTON_GPIO_1)
+#if defined(CONFIG_LOGGER_BUTTON_GPIO_1) || defined(CONFIG_UBUTTON_GPIO_1)
         case cfg_main_gpio12_screens: // gpio12_screens
             strbf_putul(sb, g_rtc_config.main.gpio12_screens);
             *type = SCONFIG_ITEM_TYPE_UINT8;
@@ -200,7 +200,7 @@ bool config_main_get_item(size_t index, config_item_info_t *info) {
             info->desc = "password3";
             break;
             
-#if defined(CONFIG_LOGGER_BUTTON_GPIO_1)
+#if defined(CONFIG_LOGGER_BUTTON_GPIO_1) || defined(CONFIG_UBUTTON_GPIO_1)
         case cfg_main_gpio12_screens:
             info->value = g_rtc_config.main.gpio12_screens;
             info->desc = "gpio_screens";
@@ -294,7 +294,7 @@ static bool config_main_set_item_impl(size_t index, uint16_t val, const char *va
             }
             break;
             
-#if defined(CONFIG_LOGGER_BUTTON_GPIO_1)
+#if defined(CONFIG_LOGGER_BUTTON_GPIO_1) || defined(CONFIG_UBUTTON_GPIO_1)
         case cfg_main_gpio12_screens:
             if(g_rtc_config.main.gpio12_screens != *(uint16_t*)value) {
                 g_rtc_config.main.gpio12_screens = *(uint16_t*)value;

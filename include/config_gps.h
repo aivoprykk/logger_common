@@ -138,7 +138,7 @@ typedef struct cfg_gps_s {
     .stat_screens = 0x01FF, \
 }
 
-extern cfg_gps_t c_gps_cfg;
+// extern cfg_gps_t c_gps_cfg;
 
 // Conversion functions
 inline float mm_s_to_km_h(uint32_t mm_s) { return (float)mm_s * 18.0f / 5000.0f; }
@@ -146,14 +146,7 @@ inline float mm_s_to_knots(uint32_t mm_s) { return (float)mm_s * 463.0f / 238200
 inline float mm_s_to_mph(uint32_t mm_s) { return (float)mm_s * 2237.0f / 100000.0f; }
 inline float mms_to_ms(uint32_t mm_s) { return (float)mm_s / 1000.0f; }
 
-inline float convert_speed(float speed, speed_unit_item_t unit) {
-    switch(unit) {
-        case kmh: return mm_s_to_km_h(speed);
-        case knot: return mm_s_to_knots(speed);
-        case mph: return mm_s_to_mph(speed);
-        default: return mms_to_ms(speed);
-    }
-}
+float convert_speed(float speed, speed_unit_item_t unit);
 
 struct strbf_s;
 bool config_gps_value_str(size_t index, struct strbf_s *sb, uint8_t* type);

@@ -8,7 +8,7 @@ extern "C" {
 
 // Configuration items for screen settings
 
-#if defined(CONFIG_LOGGER_BUTTON_GPIO_1)
+#if defined(CONFIG_LOGGER_BUTTON_GPIO_1) || defined(CONFIG_UBUTTON_GPIO_1)
 #define CFG_2ND_BUTTON_SCREEN_ITEMS(l) l(gpio12_screens)
 #else
 #define CFG_2ND_BUTTON_SCREEN_ITEMS(l)
@@ -48,7 +48,7 @@ typedef struct cfg_screen_s {
     uint8_t sail_logo;         // choice for sail logo
     int8_t screen_rotation;    // screen rotation
     uint8_t bat_view;          // battery view mode
-#if defined(CONFIG_LOGGER_BUTTON_GPIO_1)
+#if defined(CONFIG_LOGGER_BUTTON_GPIO_1) || defined(CONFIG_UBUTTON_GPIO_1)
     uint16_t gpio12_screens;     // GPIO12 screens
 #define CFG_2ND_BUTTON_SCREENS .gpio12_screens = 255U,
 #else

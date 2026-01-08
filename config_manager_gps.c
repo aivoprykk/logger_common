@@ -490,3 +490,13 @@ int config_stat_screen_get_next_cycled(int idx) {
     FUNC_ENTRY_ARGSD(TAG, "no enabled stats screens; fallback to 0");
     return 0;
 }
+
+// Definition of convert_speed to ensure it's available for linking
+float convert_speed(float speed, speed_unit_item_t unit) {
+    switch(unit) {
+        case kmh: return mm_s_to_km_h(speed);
+        case knot: return mm_s_to_knots(speed);
+        case mph: return mm_s_to_mph(speed);
+        default: return mms_to_ms(speed);
+    }
+}

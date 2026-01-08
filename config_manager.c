@@ -283,7 +283,7 @@ bool config_get_next_cycle_idx(enum sconfig_cycle_group_e group, size_t index, s
                 index = 0;
             break;
         case SCFG_CYCLE_GROUP_SCREEN:
-#if defined(CONFIG_LOGGER_BUTTON_GPIO_1)
+#if defined(CONFIG_LOGGER_BUTTON_GPIO_1) || defined(CONFIG_UBUTTON_GPIO_1)
             if(++index >= cfg_screen_gpio12_screens) ++index    // GPIO12 screens
 #else       
             ++index;

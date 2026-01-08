@@ -96,7 +96,7 @@ bool config_screen_value_str(size_t index, struct strbf_s *sb, uint8_t* type) {
             *type = SCONFIG_ITEM_TYPE_BOOL;
             return true;
 #endif
-#if defined(CONFIG_LOGGER_BUTTON_GPIO_1)
+#if defined(CONFIG_LOGGER_BUTTON_GPIO_1) || defined(CONFIG_UBUTTON_GPIO_1)
         case cfg_screen_gpio12_screens:
             strbf_putul(sb, g_rtc_config.screen.gpio12_screens);
             *type = SCONFIG_ITEM_TYPE_UINT16;
@@ -165,7 +165,7 @@ bool config_screen_get_item(size_t index, config_item_info_t *info) {
             info->desc = not_set;
             break;
 #endif
-#if defined(CONFIG_LOGGER_BUTTON_GPIO_1)
+#if defined(CONFIG_LOGGER_BUTTON_GPIO_1) || defined(CONFIG_UBUTTON_GPIO_1)
         case cfg_screen_gpio12_screens:
             info->value = g_rtc_config.screen.gpio12_screens;
             info->desc = not_set;
@@ -243,7 +243,7 @@ static bool config_screen_set_item_impl(size_t index, uint16_t val) {
             }
             break;
 #endif
-#if defined(CONFIG_LOGGER_BUTTON_GPIO_1)
+#if defined(CONFIG_LOGGER_BUTTON_GPIO_1) || defined(CONFIG_UBUTTON_GPIO_1)
         case cfg_screen_gpio12_screens:
             if(g_rtc_config.screen.gpio12_screens != val) {
                 FUNC_ENTRY_ARGSD(TAG, "GPIO12 screens changed to %u", val);
