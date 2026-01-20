@@ -22,16 +22,15 @@ bool get_fw_update_item_descriptions(size_t index, struct strbf_s *sb) {
     return true;
 }
 
-bool get_fw_update_item_values(size_t index, struct strbf_s *sb) {
+uint8_t get_fw_update_item_values(size_t index, struct strbf_s *sb) {
     switch(index) {
         case cfg_fw_update_update_channel:
             strbf_puts(sb, ",\"depends\":\"update_enabled\"");
             add_values_array(sb, config_fw_update_channels, 0, config_fw_update_channels_count, 0);
-            break;
+            return 1;
         default:
-            return false;
+            return 0;
     }
-    return true;
 }
 
 bool config_fw_update_value_str(size_t index, struct strbf_s *sb, uint8_t* type) {
@@ -105,7 +104,7 @@ static bool config_fw_update_set_item_impl(size_t index, uint16_t val) {
             return false;
     }
     if (changed != 255) {
-        unified_config_save();
+        unified_config_save_by_submodule(SCFG_GROUP_FW_UPDATE);
         // Notify all observers of change
         config_observer_notify(SCFG_GROUP_FW_UPDATE, index);
     }

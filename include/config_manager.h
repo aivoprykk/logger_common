@@ -4,9 +4,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
-// #include "config.h"
 #include "strbf.h"
 #include "logger_common.h"
+// Note: config.h is included at end of file to avoid circular includes
 
 // Shared arrays for item descriptions
 extern const char * const not_set;
@@ -26,6 +26,8 @@ typedef struct {
     const char *name;
     uint8_t pos;
     uint32_t value;
+    uint32_t min;
+    uint32_t max;
     const char *desc;
 } config_item_info_t;
 
@@ -50,8 +52,10 @@ bool config_main_get_item(size_t index, config_item_info_t *info);
 bool config_main_set_item(size_t index, const char *value);
 
 // Admin group functions
+#if defined (CONFIG_LOGGER_COMMON_ENABLE_ADMIN_CONFIG)
 bool config_admin_get_item(size_t index, config_item_info_t *info);
 bool config_admin_set_item(size_t index, const char *value);
+#endif
 
 // GPS group functions
 bool config_stat_screen_get_item(int num, config_item_info_t *item);
@@ -95,11 +99,20 @@ void config_manager_init(void);
 // Save all configuration to NVS
 bool config_manager_save(void);
 
+// Save a specific submodule to NVS (targeted save, group is sconfig_group_t)
+bool config_manager_save_submodule(int submodule);
+
+// Save only the submodule containing the specified item
+bool config_manager_save_by_item_name(const char *name);
+
 // Load all configuration from NVS
 bool config_manager_load(void);
 
 // Reset configuration to defaults
 bool config_manager_reset(void);
+
+// Repair corrupted configuration (tries to restore from NVS first)
+bool config_manager_repair(void);
 
 // Get configuration item by name (for REST API compatibility)
 int config_manager_get_item_by_name(const char *name, strbf_t *sb);

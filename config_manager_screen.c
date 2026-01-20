@@ -17,6 +17,12 @@ static const char *TAG = "config_screen";
 
 bool get_screen_item_descriptions(size_t index, struct strbf_s *sb) {
     switch(index) {
+        case cfg_screen_bar_length:
+            strbf_puts(sb, "Bar length in meters used for distance bar calculations.");
+            break;
+        case cfg_screen_sleep_info:
+            strbf_puts(sb, "Information string to display during sleep mode.");
+            break;
         case cfg_screen_speed_field:
             strbf_puts(sb, "Choice for first field in speed screen.");
             break;
@@ -32,38 +38,54 @@ bool get_screen_item_descriptions(size_t index, struct strbf_s *sb) {
         case cfg_screen_bat_view:
             strbf_puts(sb, "Battery view mode on the display.");
             break;
+#if !defined(CONFIG_LCD_IS_EPD)
+        case cfg_screen_screen_brightness:
+            strbf_puts(sb, "Screen brightness percentage (0-100%).");
+            break;
+#else
+        case cfg_screen_full_refresh_interval:
+            strbf_puts(sb, "EPD full refresh interval in cycles.");
+            break;
+#endif
         default:
             return false;
     }
     return true;
 }
 
-bool get_screen_item_values(size_t index, struct strbf_s *sb) {
+uint8_t get_screen_item_values(size_t index, struct strbf_s *sb) {
     switch(index) {
         case cfg_screen_speed_field:
             add_values_array(sb, config_speed_field_items, 0, config_speed_field_item_count, 0);
-            break;
+            return 1;
         case cfg_screen_board_logo:
             add_values_array(sb, board_logos, 0, board_logos_count, 1);
-            break;
+            return 1;
         case cfg_screen_sail_logo:
             add_values_array(sb, sail_logos, 0, sail_logos_count, 1);
-            break;
+            return 1;
         case cfg_screen_screen_rotation:
             add_values_array(sb, screen_rotations, 0, screen_rotations_count, 0);
-            break;
+            return 1;
         case cfg_screen_bat_view:
             add_values_array(sb, bat_views, 0, bat_views_count, 0);
-            break;
+            return 1;
         default:
-            return false;
+            return 0;
     }
-    return true;
 }
 
 bool config_screen_value_str(size_t index, struct strbf_s *sb, uint8_t* type) {
     if(!sb || !type) return false;
     switch(index) {
+        case cfg_screen_bar_length: // bar_length
+            strbf_putul(sb, g_rtc_config.screen.bar_length);
+            *type = SCONFIG_ITEM_TYPE_UINT16;
+            return true;
+        case cfg_screen_sleep_info: // sleep_info
+            insert_json_string_value(sb, g_rtc_config.screen.sleep_info);
+            *type = SCONFIG_ITEM_TYPE_STRING;
+            return true;
         case cfg_screen_speed_field: // speed_field
             strbf_putul(sb, g_rtc_config.screen.speed_field);
             *type = SCONFIG_ITEM_TYPE_UINT8;
@@ -88,6 +110,11 @@ bool config_screen_value_str(size_t index, struct strbf_s *sb, uint8_t* type) {
         case cfg_screen_screen_brightness:
             strbf_putul(sb, g_rtc_config.screen.screen_brightness);
             *type = SCONFIG_ITEM_TYPE_INT8;
+            return true;
+#else
+        case cfg_screen_full_refresh_interval:
+            strbf_putul(sb, g_rtc_config.screen.full_refresh_interval);
+            *type = SCONFIG_ITEM_TYPE_UINT8;
             return true;
 #endif
 #if defined(CONFIG_LOGGER_SPEED_SCREEN_VARIANT)
@@ -116,7 +143,19 @@ bool config_screen_get_item(size_t index, config_item_info_t *info) {
     // O(1) lookup: index -> enum via screen_group_items array
     // O(1) lookup: enum -> RTC field via switch
     // printf("get cfg item: %s at %u.\n", info->name, index);
+    static char desc_buf[32];
     switch (index) {
+        case cfg_screen_bar_length:
+            info->value = g_rtc_config.screen.bar_length;
+            sprintf(desc_buf, "%lu m", (unsigned long)info->value);
+            info->desc = desc_buf;
+            info->min = 0;
+            info->max = 10000;
+            break;
+        case cfg_screen_sleep_info:
+            info->value = (uintptr_t)&g_rtc_config.screen.sleep_info[0];
+            info->desc = "sleep info";
+            break;
         case cfg_screen_speed_field: // speed_field
             info->value = g_rtc_config.screen.speed_field;
             info->desc = config_speed_field_items[info->value];
@@ -157,6 +196,15 @@ bool config_screen_get_item(size_t index, config_item_info_t *info) {
         case cfg_screen_screen_brightness:
             info->value = g_rtc_config.screen.screen_brightness;
             info->desc = not_set;
+            info->min = 0;
+            info->max = 100;
+            break;
+#else
+        case cfg_screen_full_refresh_interval:
+            info->value = g_rtc_config.screen.full_refresh_interval;
+            info->desc = not_set;
+            info->min = 0;
+            info->max = 300;
             break;
 #endif
 #if defined(CONFIG_LOGGER_SPEED_SCREEN_VARIANT)
@@ -179,7 +227,7 @@ bool config_screen_get_item(size_t index, config_item_info_t *info) {
 }
 
 // Note: index is group-relative (0, 1, 2, ...) not global sconfig_item_enum_t value
-static bool config_screen_set_item_impl(size_t index, uint16_t val) {
+static bool config_screen_set_item_impl(size_t index, uint16_t val, const char *value) {
     FUNC_ENTRY_ARGSD(TAG, "index=%u, value=%u", index, val);
     if (!config_lock(-1)) {
         ELOG(TAG, "Failed to acquire config lock");
@@ -190,6 +238,17 @@ static bool config_screen_set_item_impl(size_t index, uint16_t val) {
     uint8_t changed = 255;
     // O(1) lookup: enum -> RTC field via switch
     switch (index) {
+        case cfg_screen_bar_length:
+            if(g_rtc_config.screen.bar_length != val) {
+                g_rtc_config.screen.bar_length = val;
+                changed = cfg_screen_bar_length;
+            }
+            break;
+        case cfg_screen_sleep_info:
+            if(set_string_from_json(&g_rtc_config.screen.sleep_info[0], value)) {
+                changed = cfg_screen_sleep_info;
+            }
+            break;    
         case cfg_screen_speed_field:
             if(g_rtc_config.screen.speed_field != val) {
                 FUNC_ENTRY_ARGSD(TAG, "Speed field changed to %u", val);
@@ -233,6 +292,14 @@ static bool config_screen_set_item_impl(size_t index, uint16_t val) {
                 changed = index;
             }
             break;
+#else
+        case cfg_screen_full_refresh_interval:
+            if(g_rtc_config.screen.full_refresh_interval != val) {
+                FUNC_ENTRY_ARGSD(TAG, "EPD full refresh interval changed to %u", val);
+                g_rtc_config.screen.full_refresh_interval = val;
+                changed = index;
+            }
+            break;
 #endif
 #if defined(CONFIG_LOGGER_SPEED_SCREEN_VARIANT)
         case cfg_screen_speed_large_font:
@@ -259,7 +326,7 @@ static bool config_screen_set_item_impl(size_t index, uint16_t val) {
     
     // Save to NVS for persistence
     if (changed != 255) {
-        unified_config_save();
+        unified_config_save_by_submodule(SCFG_GROUP_SCREEN);
         // Notify all observers of change
         config_observer_notify(SCFG_GROUP_SCREEN, index);
     }
@@ -273,7 +340,7 @@ bool config_screen_set_item(size_t index, const char *value) {
     }
     // Parse string to number (except for ubx_file which needs the string)
     uint16_t val = strtoul(value, 0, 10);
-    return config_screen_set_item_impl(index, val);
+    return config_screen_set_item_impl(index, val, value);
 }
 
 uint8_t config_screen_get_next_value(size_t index) {
@@ -320,6 +387,16 @@ uint8_t config_screen_get_next_value(size_t index) {
             else if(current == 20) new_value = 5;
             else new_value = 100;
             break;
+#else
+        case cfg_screen_full_refresh_interval:
+            current = g_rtc_config.screen.full_refresh_interval;
+            if(current == 10) new_value = 50;
+            else if(current == 50) new_value = 100;
+            else if(current == 100) new_value = 150;
+            else if(current == 150) new_value = 200;
+            else if(current == 200) new_value = 250;
+            else new_value = 10;
+            break;
 #endif
         default:
             break;
@@ -329,9 +406,5 @@ uint8_t config_screen_get_next_value(size_t index) {
 
 bool config_screen_set_next_value(size_t index) {
     FUNC_ENTRY_ARGSD(TAG, "index: %u", index);
-    if (config_screen_set_item_impl(index, config_screen_get_next_value(index))) {
-        // DLOG(TAG, "settings screen change saved");
-        return true;
-    }
-    return false;
+    return config_screen_set_item_impl(index, config_screen_get_next_value(index), 0);
 }

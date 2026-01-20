@@ -1,17 +1,14 @@
 #include "common_private.h"
 
-static const char *TAG = "config_main";
+static const char *TAG = "config_wifi";
 
-const char * const config_main_items[] = { CFG_MAIN_ITEM_LIST(STRINGIFY) };
+const char * const config_main_items[] = { CFG_WIFI_ITEM_LIST(STRINGIFY) };
 const size_t config_main_item_count = sizeof(config_main_items) / sizeof(config_main_items[0]);
 
-const uint8_t group = SCFG_GROUP_MAIN;
+const uint8_t group = SCFG_GROUP_WIFI;
 
 bool get_main_item_descriptions(size_t index, struct strbf_s *sb) {
     switch(index) {
-        case cfg_main_bar_length:
-            strbf_puts(sb, "Bar length in meters used for distance bar calculations.");
-            break;
         case cfg_main_ssid:
             strbf_puts(sb, "WiFi SSID for station mode (first network).");
             break;
@@ -41,20 +38,20 @@ bool get_main_item_descriptions(size_t index, struct strbf_s *sb) {
             strbf_puts(sb, "Bitfield for screens to cycle through using GPIO12 button.");
             break;
 #endif
-        case cfg_main_sleep_info:
-            strbf_puts(sb, "Information string to display during sleep mode.");
-            break;
         default:
             return false;
     }
     return true;
 }
 
-bool get_main_item_values(size_t index, struct strbf_s *sb) {
+uint8_t get_main_item_values(size_t index, struct strbf_s *sb) {
     switch(index) {
-        case cfg_main_bar_length:
+#if defined(CONFIG_LOGGER_BUTTON_GPIO_1) || defined(CONFIG_UBUTTON_GPIO_1)
+        case cfg_main_gpio12_screens:
             // No specific values array
-            break;
+            add_toggles_array(sb, screen_gpio12_items, screen_gpio12_item_count, 0);
+            return 2;
+#endif
         case cfg_main_ssid:
         case cfg_main_password:
         case cfg_main_ssid1:
@@ -63,30 +60,14 @@ bool get_main_item_values(size_t index, struct strbf_s *sb) {
         case cfg_main_password2:
         case cfg_main_ssid3:
         case cfg_main_password3:
-            // No specific values array
-            break;
-#if defined(CONFIG_LOGGER_BUTTON_GPIO_1) || defined(CONFIG_UBUTTON_GPIO_1)
-        case cfg_main_gpio12_screens:
-            // No specific values array
-            add_toggles_array(sb, screen_gpio12_items, screen_gpio12_item_count, 0);
-            break;
-#endif
-        case cfg_main_sleep_info:
-            // No specific values array
-            break;
         default:
-            return false;
+            return 0;
     }
-    return true;
 }
 
 bool config_main_value_str(size_t index, struct strbf_s *sb, uint8_t* type) {
     if(!sb || !type) return false;
     switch(index) {
-        case cfg_main_bar_length: // bar_length
-            strbf_putul(sb, g_rtc_config.main.bar_length);
-            *type = SCONFIG_ITEM_TYPE_UINT16;
-            break;
         case cfg_main_ssid: // ssid
             insert_json_string_value(sb, g_rtc_config.main.wifi_sta[0].ssid);
             *type = SCONFIG_ITEM_TYPE_STRING;
@@ -125,10 +106,6 @@ bool config_main_value_str(size_t index, struct strbf_s *sb, uint8_t* type) {
             *type = SCONFIG_ITEM_TYPE_UINT8;
             break;
 #endif
-        case cfg_main_sleep_info: // sleep_info
-            insert_json_string_value(sb, g_rtc_config.main.sleep_info);
-            *type = SCONFIG_ITEM_TYPE_STRING;
-            break;
         default:
             return false;
     }
@@ -145,7 +122,6 @@ bool config_main_get_item(size_t index, config_item_info_t *info) {
     // O(1) lookup: index -> enum via main_group_items array
     
     // O(1) lookup: enum -> RTC field via switch
-    static char desc_buf[32];
     // printf("get cfg item: %s at %u.\n", info->name, index);
     switch (index) {
 #if defined(CONFIG_LOGGER_SPEED_SCREEN_VARIANT)
@@ -154,12 +130,6 @@ bool config_main_get_item(size_t index, config_item_info_t *info) {
             info->desc = info->value ? "large" : "normal";
             break;
 #endif
-        case cfg_main_bar_length:
-            info->value = g_rtc_config.main.bar_length;
-            sprintf(desc_buf, "%lu m", (unsigned long)info->value);
-            info->desc = desc_buf;
-            break;
-
         case cfg_main_ssid:
             info->value = (uintptr_t)&g_rtc_config.main.wifi_sta[0].ssid[0];
             info->desc = "ssid";
@@ -207,11 +177,6 @@ bool config_main_get_item(size_t index, config_item_info_t *info) {
             break;
 #endif
             
-        case cfg_main_sleep_info:
-            info->value = (uintptr_t)&g_rtc_config.main.sleep_info[0];
-            info->desc = "sleep info";
-            break;
-            
         default:
             return false;
     }
@@ -240,13 +205,6 @@ static bool config_main_set_item_impl(size_t index, uint16_t val, const char *va
             }
             break;
 #endif
-        case cfg_main_bar_length:
-            if(g_rtc_config.main.bar_length != val) {
-                g_rtc_config.main.bar_length = val;
-                changed = cfg_main_bar_length;
-            }
-            break;
-            
         case cfg_main_ssid:
             if(set_string_from_json(&g_rtc_config.main.wifi_sta[0].ssid[0], value)) {
                 changed = cfg_main_ssid;
@@ -303,18 +261,12 @@ static bool config_main_set_item_impl(size_t index, uint16_t val, const char *va
             break;
 #endif
             
-        case cfg_main_sleep_info:
-            if(set_string_from_json(&g_rtc_config.main.sleep_info[0], value)) {
-                changed = cfg_main_sleep_info;
-            }
-            break;
-    
         default:
             config_unlock();
             return false;
     }
     if (changed != 255) {
-        unified_config_save();
+        unified_config_save_by_submodule(SCFG_GROUP_WIFI);
         // Notify all observers of change
         config_observer_notify(group, index);
     }

@@ -41,21 +41,20 @@ bool get_ubx_item_descriptions(size_t index, struct strbf_s *sb) {
     return true;
 }
 
-bool get_ubx_item_values(size_t index, strbf_t *sb) {
+uint8_t get_ubx_item_values(size_t index, strbf_t *sb) {
     switch(index) {
         case cfg_ubx_ubx_gnss:
             add_values_array(sb, gnss_desc, &gnss_desc_val[0], gnss_desc_items_count, 0);
-            break;
+            return 1;
         case cfg_ubx_ubx_output_rate:
             add_values_array(sb, sample_rates, &sample_rate_values[0], sample_rates_items_count, 0);
-            break;
+            return 1;
         case cfg_ubx_ubx_nav_mode:
             add_values_array(sb, dynamic_models, &dynamic_model_values[0], dynamic_models_items_count, 0);
-            break;
+            return 1;
         default:
-            return false;
+            return 0;
     }
-    return true;
 }
 
 bool config_ubx_value_str(size_t index, strbf_t *sb, uint8_t* type) {
@@ -204,13 +203,15 @@ static bool config_ubx_set_item_impl(size_t index, uint16_t val) {
             config_unlock();
             return false;
     }
+    bool ret = false;
     if (changed != 255) {
-        unified_config_save();
+        unified_config_save_by_submodule(SCFG_GROUP_UBX);
         // Notify all observers of change
         config_observer_notify(SCFG_GROUP_UBX, index);
+        ret = true;
     }
     config_unlock();
-    return true;
+    return ret;
 }
 
 bool config_ubx_set_item(size_t index, const char *value) {

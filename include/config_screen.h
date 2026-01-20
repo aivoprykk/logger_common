@@ -17,7 +17,7 @@ extern "C" {
 #if !defined(CONFIG_LCD_IS_EPD)
 #define CFG_SCREEN_BRIGHTNESS_ITEMS(l) l(screen_brightness)
 #else
-#define CFG_SCREEN_BRIGHTNESS_ITEMS(l)
+#define CFG_SCREEN_BRIGHTNESS_ITEMS(l) l(full_refresh_interval)
 #endif
 
 #if defined(CONFIG_LOGGER_SPEED_SCREEN_VARIANT)
@@ -34,7 +34,9 @@ l(screen_rotation) \
 l(bat_view) \
 CFG_2ND_BUTTON_SCREEN_ITEMS(l) \
 CFG_SPEED_SCREEN_LARGE_FONT_ITEMS(l) \
-CFG_SCREEN_BRIGHTNESS_ITEMS(l)
+CFG_SCREEN_BRIGHTNESS_ITEMS(l) \
+l(bar_length)  \
+l(sleep_info)
 
 #define CFG_SCREEN_ALL_ITEM_LIST(l) \
     CFG_SCREEN_ITEM_LIST(l)
@@ -43,6 +45,7 @@ extern const char * const config_screen_items[];
 extern const size_t config_screen_item_count;
 
 typedef struct cfg_screen_s {
+    uint16_t version;
     uint8_t speed_field;        // choice for first field in speed screen
     uint8_t board_logo;        // choice for board logo
     uint8_t sail_logo;         // choice for sail logo
@@ -62,13 +65,17 @@ typedef struct cfg_screen_s {
 #endif
 #if !defined(CONFIG_LCD_IS_EPD)
     uint8_t screen_brightness; // Brightness %
-#define SCREEN_BRIGHTNESS_DEFAULT 100,
+#define SCREEN_BRIGHTNESS_DEFAULT .screen_brightness = 100,
 #else
-#define SCREEN_BRIGHTNESS_DEFAULT
+#define SCREEN_BRIGHTNESS_DEFAULT .full_refresh_interval = 200,
+    uint8_t full_refresh_interval; // EPD full refresh interval in cycles
 #endif
-} cfg_screen_t;
+    uint16_t bar_length;         // Bar length in meters
+    char sleep_info[32];         // Sleep info string
+} __attribute__((packed, aligned(4))) cfg_screen_t;
 
 #define CFG_SCREEN_DEFAULTS() { \
+    .version = 1, \
     .speed_field = 1, \
     .board_logo = 1, \
     .sail_logo = 1, \
@@ -77,6 +84,8 @@ typedef struct cfg_screen_s {
     CFG_2ND_BUTTON_SCREENS \
     CFG_SCREEN_SPEED_LARGE_FONT \
     SCREEN_BRIGHTNESS_DEFAULT \
+    .bar_length = 1852, \
+    .sleep_info = "ESP GPS", \
 }
 
 // Individual configuration item helpers
@@ -142,7 +151,7 @@ enum cfg_screen_item_e {
 
 struct strbf_s;
 bool config_screen_value_str(size_t index, struct strbf_s *sb, uint8_t* type);
-bool get_screen_item_values(size_t index, struct strbf_s *sb);
+uint8_t get_screen_item_values(size_t index, struct strbf_s *sb);
 bool get_screen_item_descriptions(size_t index, struct strbf_s *sb);
 bool config_screen_set_next_item(size_t index);
 uint8_t config_screen_get_next_value(size_t index);

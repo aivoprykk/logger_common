@@ -92,20 +92,26 @@ extern const char * const config_ubx_items[];
 extern const size_t config_ubx_item_count;
 
 typedef struct cfg_ubx_s {
-    int baud;
-    ubx_output_rate_t output_rate;
-    ubx_nav_mode_t nav_mode;
-    // uint8_t nav_mode_auto;
-    uint8_t gnss;
-    bool msgout_sat;
-} cfg_ubx_t;
+    // Version tracking for migration
+    uint16_t version;      // 2 bytes
+    uint32_t baud;         // 4 bytes - max 230400 fits in uint16_t
+    
+    // 1-byte aligned fields
+    ubx_output_rate_t output_rate;  // 1 byte - enum value 0x01-0x14
+    ubx_nav_mode_t nav_mode;       // 1 byte - enum value 0-8
+    uint8_t gnss;                  // 1 byte - GNSS bitmask (0-127)
+    uint8_t msgout_sat;            // 1 byte - boolean/flag
+    // Total: 8 bytes (packed, aligned to 4)s
+    uint16_t reserved;    // 2 bytes padding to make size multiple of 4
+} __attribute__((packed, aligned(4))) cfg_ubx_t;
 
 #define CFG_UBX_DEFAULTS() {  \
-    .baud = UBX_BAUD_115200,        \
+    .version = 1, \
+    .baud = UBX_BAUD_115200, \
     .output_rate = UBX_OUTPUT_5HZ, \
-    .nav_mode = UBX_MODE_PEDESTRIAN,  \
-    .gnss = 111, /* 01101111 */      \
-    .msgout_sat = true,            \
+    .nav_mode = UBX_MODE_PEDESTRIAN, \
+    .gnss = 103, \
+    .msgout_sat = 1, \
 }
 
 #define CFG_ENUM_UBX(l) cfg_ubx_##l,
@@ -115,7 +121,7 @@ enum cfg_ubx_item_e {
 
 struct strbf_s;
 bool config_ubx_value_str(size_t index, struct strbf_s *sb, uint8_t* type);
-bool get_ubx_item_values(size_t index, struct strbf_s *sb);
+uint8_t get_ubx_item_values(size_t index, struct strbf_s *sb);
 bool get_ubx_item_descriptions(size_t index, struct strbf_s *sb);
 uint8_t config_ubx_get_next_value(size_t index);
 bool config_ubx_set_next_value(size_t index); // Cycle to next value (for UI)

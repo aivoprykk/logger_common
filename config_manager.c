@@ -17,6 +17,28 @@ static const char * TAG = "config_manager";
 
 // Shared arrays for item descriptions
 const char * const not_set = "not set";
+static const char * const _sconfig_group_names[] = {
+    SCFG_GROUP_LIST(STRINGIFY)
+    SCFG_GROUP_OTHER_LIST(STRINGIFY)
+};
+const char * sconfig_group_names(sconfig_group_t id) {
+   return (id >= 0 && id < SCFG_GROUP_COUNT) ? _sconfig_group_names[id] : "unknown";
+};
+
+bool config_manager_is_group_default_hidden(sconfig_group_t group) {
+    switch(group) {
+        case SCFG_GROUP_ADVANCED:
+        case SCFG_GROUP_FW_UPDATE:
+#if defined (CONFIG_LOGGER_COMMON_ENABLE_ADMIN_CONFIG)
+        case SCFG_GROUP_ADMIN:
+#endif
+        case SCFG_GROUP_WIFI:
+        case SCFG_GROUP_SCREEN:
+            return true;
+        default:
+            return false;
+    }
+}
 
 // ============================================================================
 // Function pointer table for group operations (optimization to eliminate switches)
@@ -25,7 +47,7 @@ const char * const not_set = "not set";
 typedef struct {
     bool (*get_item)(size_t index, config_item_info_t *info);
     bool (*set_item)(size_t index, const char *value);
-    bool (*get_values)(size_t index, strbf_t *sb);
+    uint8_t (*get_values)(size_t index, strbf_t *sb);
     bool (*get_descriptions)(size_t index, strbf_t *sb);
     bool (*value_str)(size_t index, strbf_t *sb, uint8_t *type);
     size_t item_count;
@@ -47,7 +69,7 @@ static void init_group_ops_table(void) {
         .item_count = config_screen_item_count,
         .item_names = config_screen_items
     };
-    group_ops_table[SCFG_GROUP_MAIN] = (config_group_ops_t){
+    group_ops_table[SCFG_GROUP_WIFI] = (config_group_ops_t){
         .get_item = config_main_get_item,
         .set_item = config_main_set_item,
         .get_values = get_main_item_values,
@@ -74,6 +96,7 @@ static void init_group_ops_table(void) {
         .item_count = config_ubx_item_count,
         .item_names = config_ubx_items
     };
+#if defined (CONFIG_LOGGER_COMMON_ENABLE_ADMIN_CONFIG)
     group_ops_table[SCFG_GROUP_ADMIN] = (config_group_ops_t){
         .get_item = config_admin_get_item,
         .set_item = config_admin_set_item,
@@ -83,6 +106,7 @@ static void init_group_ops_table(void) {
         .item_count = config_admin_item_count,
         .item_names = config_admin_items
     };
+#endif
     group_ops_table[SCFG_GROUP_FW_UPDATE] = (config_group_ops_t){
         .get_item = config_fw_update_get_item,
         .set_item = config_fw_update_set_item,
@@ -193,7 +217,7 @@ bool config_get_item_description(sconfig_group_t group, size_t index, struct str
     return group_ops_table[group].get_descriptions(index, sb);
 }
 
-bool config_get_item_values(sconfig_group_t group, size_t index, strbf_t *sb) {
+uint8_t config_get_item_values(sconfig_group_t group, size_t index, strbf_t *sb) {
     if (group >= SCFG_GROUP_COUNT || !group_ops_table[group].get_values) return false;
     return group_ops_table[group].get_values(index, sb);
 }
@@ -284,7 +308,7 @@ bool config_get_next_cycle_idx(enum sconfig_cycle_group_e group, size_t index, s
             break;
         case SCFG_CYCLE_GROUP_SCREEN:
 #if defined(CONFIG_LOGGER_BUTTON_GPIO_1) || defined(CONFIG_UBUTTON_GPIO_1)
-            if(++index >= cfg_screen_gpio12_screens) ++index    // GPIO12 screens
+            if(++index >= cfg_screen_gpio12_screens) ++index;    // GPIO12 screens
 #else       
             ++index;
 #endif
@@ -395,6 +419,9 @@ int config_manager_get_item_json(uint8_t group, size_t index, strbf_t *sb) {
 
 // Optimized version using pre-fetched ops table (avoids 3 extra table lookups)
 static int config_manager_get_item_json_with_ops(const config_group_ops_t *ops, const char *name, size_t idx, strbf_t *sb) {
+    config_item_info_t info = {0};
+    if (!ops->get_item || !ops->get_item(idx, &info)) 
+        return 0;
     size_t start_len = sb->cur - sb->start;
     strbf_puts(sb, "{\"name\":\"");
     strbf_puts(sb, name);
@@ -413,16 +440,21 @@ static int config_manager_get_item_json_with_ops(const config_group_ops_t *ops, 
     }
     strbf_puts(sb, "\"");
 
+    uint8_t values = 0;
+    if (ops->get_values) {
+        values = ops->get_values(idx, sb);
+    }
     // Add type field
     strbf_puts(sb, ",\"type\":\"");
     strbf_puts(sb, get_type_string(type));
     strbf_puts(sb, "\"");
     // Add values array if applicable - direct call
-
-    if (ops->get_values) {
-        ops->get_values(idx, sb);
+    if(!values && (info.min || info.max)) {
+        strbf_puts(sb, ",\"min\":");
+        strbf_putul(sb, info.min);
+        strbf_puts(sb, ",\"max\":");
+        strbf_putul(sb, info.max);
     }
-    
     strbf_puts(sb, "}");
     return (sb->cur - sb->start) - start_len; // bytes written
 }
@@ -481,6 +513,81 @@ void config_manager_init(void) {
     unified_config_init();
 }
 
+/**
+ * @brief Map a config item name to its submodule group
+ * @param name Config item name (e.g., "ubx_output_rate", "gps_timezone")
+ * @return Submodule group, or SCFG_GROUP_COUNT if not found
+ * 
+ * Note: STAT_SCREENS items are part of GPS config in unified storage
+ */
+static sconfig_group_t config_get_submodule_from_item_name(const char *name) {
+    if (!name) return SCFG_GROUP_COUNT;
+    
+    // GPS items (includes stat_screens)
+    if (strstr(name, "gps_") == name || strstr(name, "stat_") == name) 
+        return SCFG_GROUP_GPS;
+    
+    // UBX items
+    if (strstr(name, "ubx_") == name) return SCFG_GROUP_UBX;
+    
+    // Screen items
+    if (strstr(name, "screen_") == name) return SCFG_GROUP_SCREEN;
+    
+    // WiFi items
+    if (strstr(name, "ssid") || strstr(name, "password") || 
+        strstr(name, "bar_length") || strstr(name, "gpio") || 
+        strstr(name, "sleep_info")) return SCFG_GROUP_WIFI;
+    
+    // FW update items
+    if (strstr(name, "fw_") == name || strstr(name, "ota_") == name) 
+        return SCFG_GROUP_FW_UPDATE;
+    
+    // Admin items
+#if defined (CONFIG_LOGGER_COMMON_ENABLE_ADMIN_CONFIG)
+    if (strstr(name, "admin_") == name) return SCFG_GROUP_ADMIN;
+#endif
+    // Advanced items (brightness, move offset)
+    if (strstr(name, "brightness") || strstr(name, "move_offset"))
+        return SCFG_GROUP_ADVANCED;
+    
+    return SCFG_GROUP_COUNT;  // Unknown
+}
+
+bool config_manager_save_submodule(int submodule_int) {
+    sconfig_group_t submodule = (sconfig_group_t)submodule_int;
+    // Save only the specified submodule to NVS
+    // Supported submodules for unified config
+    switch(submodule) {
+        case SCFG_GROUP_GPS:
+        case SCFG_GROUP_UBX:
+        case SCFG_GROUP_SCREEN:
+        case SCFG_GROUP_WIFI:
+        case SCFG_GROUP_FW_UPDATE:
+#if defined (CONFIG_LOGGER_COMMON_ENABLE_ADMIN_CONFIG)
+        case SCFG_GROUP_ADMIN:
+#endif
+        case SCFG_GROUP_ADVANCED:
+            unified_config_save_by_submodule(submodule);
+            return sconfig_commit() == 0;
+        default:
+            ESP_LOGW(TAG, "Cannot save unknown submodule %d", submodule);
+            return false;
+    }
+}
+
+bool config_manager_save_by_item_name(const char *name) {
+    // Determine which submodule contains this item and save only that
+    uint8_t submodule, index;
+    if (!config_get_by_name(name, &submodule, &index)) return 0;
+    // sconfig_group_t submodule = config_get_submodule_from_item_name(name);
+    if (submodule == SCFG_GROUP_COUNT) {
+        ESP_LOGW(TAG, "Could not determine submodule for item: %s", name);
+        return false;
+    }
+    ESP_LOGD(TAG, "Saving item '%s' to submodule %d", name, submodule);
+    return config_manager_save_submodule(submodule);
+}
+
 bool config_manager_save(void) {
     // Save unified config to NVS
     unified_config_save();
@@ -495,7 +602,14 @@ bool config_manager_load(void) {
 }
 
 bool config_manager_reset(void) {
-    // Reset both systems
-    unified_config_repair();  // Restores defaults
+    // Reset both systems to factory defaults
+    unified_config_reset_to_defaults();  // Force defaults and save
     return sconfig_reset() == 0;
+}
+
+bool config_manager_repair(void) {
+    // Repair corrupted config (tries NVS restore first, defaults as fallback)
+    unified_config_repair();
+    // sconfig doesn't need repair - it auto-loads on init
+    return true;
 }

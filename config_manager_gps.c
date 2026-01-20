@@ -23,6 +23,8 @@ const size_t timezone_items_count = sizeof(timezone_items) / sizeof(timezone_ite
 const char * const gps_stat_screen_items[] = { STAT_SCREEN_ITEM_LIST(STRINGIFY) };
 const size_t gps_stat_screen_item_count = sizeof(gps_stat_screen_items) / sizeof(gps_stat_screen_items[0]);
 
+const char * const log_format_items[] = {LOG_FORMAT_ITEM_LIST(STRINGIFY)};
+const size_t log_format_items_count = sizeof(log_format_items) / sizeof(log_format_items[0]);
 
 bool get_gps_item_descriptions(size_t index, struct strbf_s *sb) {
     switch(index) {
@@ -42,15 +44,14 @@ bool get_gps_item_descriptions(size_t index, struct strbf_s *sb) {
             strbf_puts(sb, "Enable/disable GPS statistics screens on the display.");
             break;
         case cfg_gps_log_txt:
-        case cfg_gps_log_ubx:
-        case cfg_gps_log_sbp:
-        case cfg_gps_log_gpx:
-#if defined(CONFIG_GPS_LOG_GPY)
-        case cfg_gps_log_gpy:
-#endif
+            strbf_puts(sb, "Enable/disable logging metainfo.");
+            break;
         case cfg_gps_log_ubx_nav_sat:
             // return "enable/disable logging for this format";
-            strbf_puts(sb, "Enable/disable logging for this format.");
+            strbf_puts(sb, "Enable/disable logging for sat messages.");
+            break;
+        case cfg_gps_log_format:
+            strbf_puts(sb, "GPS log format selection.");
             break;
         case cfg_gps_ubx_file:
             strbf_puts(sb, "Base filename for log files.");
@@ -61,24 +62,37 @@ bool get_gps_item_descriptions(size_t index, struct strbf_s *sb) {
     return true;
 }
 
-bool get_gps_item_values(size_t index, struct strbf_s *sb) {
+uint8_t get_gps_item_values(size_t index, struct strbf_s *sb) {
     switch(index) {
         case cfg_gps_speed_unit:
             add_values_array(sb, speed_units, 0, speed_units_items_count, 0);
-            break;
+            return 1;
         case cfg_gps_file_date_time:
             add_values_array(sb, file_date_time_items, 0, file_date_time_items_count, 0);
-            break;
+            return 1;
         case cfg_gps_timezone:
             add_values_array(sb, timezone_items, 0, timezone_items_count, 0);
-            break;
+            return 1;
+        case cfg_gps_log_format:
+            add_values_array(sb, log_format_items, 0, log_format_items_count, 0);
+            return 1;
         case cfg_gps_stat_screens:
             add_toggles_array(sb, gps_stat_screen_items, 0, gps_stat_screen_item_count, 0);
-            break;
+            return 2;
         default:
-            return false;
+            return 0;
     }
-    return true;
+}
+
+static uint8_t get_log_format_index(void) {
+    uint8_t idx = g_rtc_config.gps.log_enables.bits.log_sbp ? log_format_sbp :
+                  g_rtc_config.gps.log_enables.bits.log_ubx ? log_format_ubx :
+                  g_rtc_config.gps.log_enables.bits.log_gpx ? log_format_gpx :
+#if defined (CONFIG_GPS_LOG_GPY)
+                  g_rtc_config.gps.log_enables.bits.log_gpy ? log_format_gpy :
+#endif
+                  log_format_sbp; // Default to 0 if none set
+    return idx;
 }
 
 bool config_gps_value_str(size_t index, struct strbf_s *sb, uint8_t* type) {
@@ -93,33 +107,20 @@ bool config_gps_value_str(size_t index, struct strbf_s *sb, uint8_t* type) {
             *type = SCONFIG_ITEM_TYPE_UINT8;
             break;
         case cfg_gps_stat_screens: // stat_screens
-            strbf_putul(sb, g_rtc_config.gps.stat_screens);
+            strbf_putul(sb, g_rtc_config.gps.stat_screens.value);
             *type = SCONFIG_ITEM_TYPE_UINT16;
             break;
         case cfg_gps_log_txt: // log_txt
-            strbf_putul(sb, g_rtc_config.gps.log_txt ? 1 : 0);
+            strbf_putul(sb, g_rtc_config.gps.log_enables.bits.log_txt ? 1 : 0);
             *type = SCONFIG_ITEM_TYPE_BOOL;
             break;
-        case cfg_gps_log_ubx: // log_ubx
-            strbf_putul(sb, g_rtc_config.gps.log_ubx ? 1 : 0);
-            *type = SCONFIG_ITEM_TYPE_BOOL;
+        case cfg_gps_log_format: // log_format
+            uint8_t idx = get_log_format_index();
+            strbf_putul(sb, idx);
+            *type = SCONFIG_ITEM_TYPE_UINT8;
             break;
-        case cfg_gps_log_sbp: // log_sbp
-            strbf_putul(sb, g_rtc_config.gps.log_sbp ? 1 : 0);
-            *type = SCONFIG_ITEM_TYPE_BOOL;
-            break;
-        case cfg_gps_log_gpx: // log_gpx
-            strbf_putul(sb, g_rtc_config.gps.log_gpx ? 1 : 0);
-            *type = SCONFIG_ITEM_TYPE_BOOL;
-            break;
-#if defined(CONFIG_GPS_LOG_GPY)
-        case cfg_gps_log_gpy: // log_gpy
-            strbf_putul(sb, g_rtc_config.gps.log_gpy ? 1 : 0);
-            *type = SCONFIG_ITEM_TYPE_BOOL;
-            break;
-#endif
         case cfg_gps_log_ubx_nav_sat: // log_ubx_nav_sat
-            strbf_putul(sb, g_rtc_config.gps.log_ubx_nav_sat ? 1 : 0);
+            strbf_putul(sb, g_rtc_config.gps.log_enables.bits.log_ubx_nav_sat ? 1 : 0);
             *type = SCONFIG_ITEM_TYPE_BOOL;
             break;
         case cfg_gps_file_date_time: // file_date_time
@@ -168,33 +169,24 @@ bool config_gps_get_item(size_t index, config_item_info_t *info) {
             }
             break;
         case cfg_gps_stat_screens: // stat_screens
-            info->value = g_rtc_config.gps.stat_screens;
+            info->value = g_rtc_config.gps.stat_screens.value;
             info->desc = not_set; // No specific description
             break;
         case cfg_gps_log_txt: // log_txt
-            info->value = g_rtc_config.gps.log_txt ? 1 : 0;
+            info->value = g_rtc_config.gps.log_enables.bits.log_txt ? 1 : 0;
             info->desc = info->value ? str_on : str_off;
             break;
-        case cfg_gps_log_ubx: // log_ubx
-            info->value = g_rtc_config.gps.log_ubx ? 1 : 0;
-            info->desc = info->value ? str_on : str_off;
+        case cfg_gps_log_format: // log_format
+            uint8_t idx = get_log_format_index();
+            info->value = idx;
+            if (idx < log_format_items_count) {
+                info->desc = log_format_items[idx];
+            } else {
+                info->desc = not_set;
+            }
             break;
-        case cfg_gps_log_sbp: // log_sbp
-            info->value = g_rtc_config.gps.log_sbp ? 1 : 0;
-            info->desc = info->value ? str_on : str_off;
-            break;
-        case cfg_gps_log_gpx: // log_gpx
-            info->value = g_rtc_config.gps.log_gpx ? 1 : 0;
-            info->desc = info->value ? str_on : str_off;
-            break;
-#if defined(CONFIG_GPS_LOG_GPY)
-        case cfg_gps_log_gpy: // log_gpy
-            info->value = g_rtc_config.gps.log_gpy ? 1 : 0;
-            info->desc = info->value ? str_on : str_off;
-            break;
-#endif
         case cfg_gps_log_ubx_nav_sat: // log_ubx_nav_sat
-            info->value = g_rtc_config.gps.log_ubx_nav_sat ? 1 : 0;
+            info->value = g_rtc_config.gps.log_enables.bits.log_ubx_nav_sat ? 1 : 0;
             info->desc = info->value ? str_on : str_off;
             break;
         case cfg_gps_file_date_time: // file_date_time
@@ -246,59 +238,42 @@ static bool config_gps_set_item_impl(size_t index, uint16_t val, const char *str
             break;
         }
         case cfg_gps_stat_screens: {// stat_screens
-            FUNC_ENTRY_ARGSD(TAG, "Stat screens config change from %u to %hu.", g_rtc_config.gps.stat_screens, val);
-            if (g_rtc_config.gps.stat_screens != val) {
-                g_rtc_config.gps.stat_screens = !val ? 1 : val; // Ensure at least one screen is enabled
+            FUNC_ENTRY_ARGSD(TAG, "Stat screens config change from %u to %hu.", g_rtc_config.gps.stat_screens.value, val);
+            if (g_rtc_config.gps.stat_screens.value != val) {
+                g_rtc_config.gps.stat_screens.value = !val ? 1 : val; // Ensure at least one screen is enabled
                 changed = cfg_gps_stat_screens;
             }
             break;
         }
         case cfg_gps_log_txt: {// log_txt
-            if (g_rtc_config.gps.log_txt != val) {
-                FUNC_ENTRY_ARGSD(TAG, "Log TXT config changed from %d to %u.", g_rtc_config.gps.log_txt, val);
-                g_rtc_config.gps.log_txt = val ? 1 : 0;
+            if (g_rtc_config.gps.log_enables.bits.log_txt != val) {
+                FUNC_ENTRY_ARGSD(TAG, "Log TXT config changed from %d to %u.", g_rtc_config.gps.log_enables.bits.log_txt, val);
+                g_rtc_config.gps.log_enables.bits.log_txt = val ? 1 : 0;
                 changed = cfg_gps_log_txt;
             }
             break;
         }
-        case cfg_gps_log_ubx: {// log_ubx
-            if (g_rtc_config.gps.log_ubx != val) {
-                FUNC_ENTRY_ARGSD(TAG, "Log UBX config changed from %d to %u.", g_rtc_config.gps.log_ubx, val);
-                g_rtc_config.gps.log_ubx = val ? 1 : 0;
-                changed = cfg_gps_log_ubx;
+        case cfg_gps_log_format: {// log_format
+            uint8_t idx = val < log_format_items_count ? val : log_format_sbp;
+            uint8_t cur_idx = get_log_format_index();
+            uint8_t format_mask = 0;
+            if (idx != cur_idx) {
+                FUNC_ENTRY_ARGSD(TAG, "Log format config changed from %d to %u.", cur_idx, idx);
+                // clean all format bits once
+                for (uint8_t i = 0; i < log_format_items_count; i++) {
+                    format_mask |= (1 << (i + 1));
+                }
+                g_rtc_config.gps.log_enables.value &= ~format_mask;
+                // set selected format bit
+                g_rtc_config.gps.log_enables.value = (g_rtc_config.gps.log_enables.value & 0x01) | (1 << (idx + 1));
+                changed = cfg_gps_log_format;
             }
             break;
         }
-        case cfg_gps_log_sbp: {// log_sbp
-            if (g_rtc_config.gps.log_sbp != val) {
-                FUNC_ENTRY_ARGSD(TAG, "Log SBP config changed from %d to %u.", g_rtc_config.gps.log_sbp, val);
-                g_rtc_config.gps.log_sbp = val ? 1 : 0;
-                changed = cfg_gps_log_sbp;
-            }
-            break;
-        }
-        case cfg_gps_log_gpx: {// log_gpx
-            if (g_rtc_config.gps.log_gpx != val) {
-                FUNC_ENTRY_ARGSD(TAG, "Log GPX config changed from %d to %u.", g_rtc_config.gps.log_gpx, val);
-                g_rtc_config.gps.log_gpx = val ? 1 : 0;
-                changed = cfg_gps_log_gpx;
-            }
-            break;
-        }
-#if defined(CONFIG_GPS_LOG_GPY)
-        case cfg_gps_log_gpy: {// log_gpy
-            if (g_rtc_config.gps.log_gpy != val) {
-                FUNC_ENTRY_ARGSD(TAG, "Log GPY config changed from %d to %u.", g_rtc_config.gps.log_gpy, val);
-                g_rtc_config.gps.log_gpy = val;
-                changed = cfg_gps_log_gpy;
-            }
-            break;
-        }
-#endif
         case cfg_gps_log_ubx_nav_sat: {// log_ubx_nav_sat
-            if (g_rtc_config.gps.log_ubx_nav_sat != val) {
-                FUNC_ENTRY_ARGSD(TAG, "Log UBX NAV SAT config changed from %d to %u.", g_rtc_config.gps.log_ubx_nav_sat, val);
-                g_rtc_config.gps.log_ubx_nav_sat = val ? 1 : 0;
+            if (g_rtc_config.gps.log_enables.bits.log_ubx_nav_sat != val) {
+                FUNC_ENTRY_ARGSD(TAG, "Log UBX NAV SAT config changed from %d to %u.", g_rtc_config.gps.log_enables.bits.log_ubx_nav_sat, val);
+                g_rtc_config.gps.log_enables.bits.log_ubx_nav_sat = val ? 1 : 0;
                 changed = cfg_gps_log_ubx_nav_sat;
             }
             break;
@@ -321,7 +296,7 @@ static bool config_gps_set_item_impl(size_t index, uint16_t val, const char *str
             return false;
     }
     if(changed != 255) {
-        unified_config_save();
+        unified_config_save_by_submodule(SCFG_GROUP_GPS);
         // Notify all observers of change
         config_observer_notify(SCFG_GROUP_GPS, index);
     }
@@ -364,30 +339,22 @@ uint8_t config_gps_get_next_value(size_t index) {
             break;
         }
         case cfg_gps_log_txt:
-            current = g_rtc_config.gps.log_txt ? 1 : 0;
+            current = g_rtc_config.gps.log_enables.bits.log_txt ? 1 : 0;
             new_value = !current;
             break;
-        case cfg_gps_log_ubx:
-            current = g_rtc_config.gps.log_ubx ? 1 : 0;
-            new_value = !current;
+        case cfg_gps_log_format:
+            {
+                uint8_t cur_idx = get_log_format_index();
+                uint8_t next_idx = cur_idx + 1;
+                if (next_idx >= log_format_items_count) {
+                    next_idx = 0; // Wrap around
+                }
+                new_value = next_idx;
+            }
             break;
-        case cfg_gps_log_sbp:
-            current = g_rtc_config.gps.log_sbp ? 1 : 0;
-            new_value = !current;
-            break;
-        case cfg_gps_log_gpx:
-            current = g_rtc_config.gps.log_gpx ? 1 : 0;
-            new_value = !current;
-            break;
-#if defined(CONFIG_GPS_LOG_GPY)
-        case cfg_gps_log_gpy:
-            current = g_rtc_config.gps.log_gpy ? 1 : 0;
-            new_value = !current;
-            break;
-#endif
         case cfg_gps_log_ubx_nav_sat: {
             // Toggle boolean: 0 -> 1 -> 0
-            uint8_t current = g_rtc_config.gps.log_ubx_nav_sat ? 1 : 0;
+            uint8_t current = g_rtc_config.gps.log_enables.bits.log_ubx_nav_sat ? 1 : 0;
             new_value = !current;
             break;
         }
@@ -410,7 +377,7 @@ bool config_gps_set_next_value(size_t index) {
     if (config_gps_set_item_impl(index, config_gps_get_next_value(index), NULL)) {
         // Special logic: if switching to 0 (mac_index), ensure log_txt is enabled
         if (index == cfg_gps_file_date_time && g_rtc_config.gps.file_date_time == 0) {
-            if (!g_rtc_config.gps.log_txt)
+            if (!g_rtc_config.gps.log_enables.bits.log_txt)
                 config_gps_set_item_impl(cfg_gps_log_txt, 1, NULL);
         }
         return true;
@@ -420,14 +387,14 @@ bool config_gps_set_next_value(size_t index) {
 
 bool config_stat_screen_get_item(int num, config_item_info_t *item) {
     // FUNC_ENTRY_ARGSD(TAG, "index:%d", num);
-    if(!item) return 0;
+    if(!item) return false;
     if(num<0 && num>= gps_stat_screen_item_count) num = 0;
-    item->value = GETBIT(g_rtc_config.gps.stat_screens, num);
+    item->value = GETBIT(g_rtc_config.gps.stat_screens.value, num);
     item->name = gps_stat_screen_items[num];
     item->pos = num;
     item->desc = item->value ? str_on : str_off;
     // esp_event_post(GPS_LOG_EVENT, GPS_LOG_EVENT_CFG_GET, &num, sizeof(num), timeout_max);
-    return item;
+    return true;
 }
 
 struct m_config_item_s * get_gps_cfg_item(int num, struct m_config_item_s *item) {
@@ -453,7 +420,7 @@ struct m_config_item_s * get_gps_cfg_item(int num, struct m_config_item_s *item)
 uint16_t config_stat_screen_get_next_value(int num) {
     // printf("num:%d", num);
     if(num>=gps_stat_screen_item_count) return 0;
-    uint16_t val = g_rtc_config.gps.stat_screens;
+    uint16_t val = g_rtc_config.gps.stat_screens.value;
     if(num>=0 && num < gps_stat_screen_item_count) {
         val ^= (BIT(num));
     }
@@ -481,8 +448,8 @@ int config_stat_screen_get_next_cycled(int idx) {
     for (size_t step = 1; step <= count; step++) {
         int next = start + (int)step;
         if (next >= (int)count) next -= (int)count;
-        if (GETBIT(g_rtc_config.gps.stat_screens, next)) {
-            FUNC_ENTRY_ARGSD(TAG, "next enabled idx: %d, value: %hu", next, g_rtc_config.gps.stat_screens);
+        if (GETBIT(g_rtc_config.gps.stat_screens.value, next)) {
+            FUNC_ENTRY_ARGSD(TAG, "next enabled idx: %d, value: %hu", next, g_rtc_config.gps.stat_screens.value);
             return next;
         }
     }

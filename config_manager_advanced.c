@@ -1,4 +1,5 @@
 #include "common_private.h"
+#include "string.h"
 
 static const char *TAG = "config_advanced";
 
@@ -28,6 +29,9 @@ bool get_advanced_item_descriptions(size_t index, struct strbf_s *sb) {
         case cfg_advanced_stat_speed:
             strbf_puts(sb, "Maximum speed in m/s for displaying statistical screens.");
             break;
+        case cfg_advanced_experimental_features:
+            strbf_puts(sb, "Enable or disable experimental features.");
+            break;
 #if defined(CONFIG_LOGGER_STAT_SCREEN_ROTATION)
         case cfg_advanced_stat_screens_time:
             strbf_puts(sb, "Time interval between switching statistical screens.");
@@ -38,17 +42,17 @@ bool get_advanced_item_descriptions(size_t index, struct strbf_s *sb) {
     }
     return true;
 }
-bool get_advanced_item_values(size_t index, struct strbf_s *sb) {
+
+uint8_t get_advanced_item_values(size_t index, struct strbf_s *sb) {
     switch(index) {
 #if defined(CONFIG_LOGGER_STAT_SCREEN_ROTATION)
         case cfg_advanced_stat_screens_time:
             add_values_array(sb, seconds_list, SECONDS_LIST_COUNT, 1);
-            break;
+            return 1;
 #endif       
         default:
-            return false;
+            return 0;
     }
-    return true;
 }
 
 bool config_advanced_value_str(size_t index, struct strbf_s *sb, uint8_t* type) {
@@ -75,6 +79,10 @@ bool config_advanced_value_str(size_t index, struct strbf_s *sb, uint8_t* type) 
         case cfg_advanced_stat_speed: // stat_screen_speed
             strbf_putul(sb, g_rtc_config.advanced.stat_screen_speed);
             *type = SCONFIG_ITEM_TYPE_UINT8;
+            break;
+        case cfg_advanced_experimental_features: // experimental_features
+            strbf_putul(sb, g_rtc_config.advanced.experimental_features);
+            *type = SCONFIG_ITEM_TYPE_BOOL;
             break;
 #if defined(CONFIG_LOGGER_STAT_SCREEN_ROTATION)
         case cfg_advanced_stat_screens_time: // stat_screens_time
@@ -115,10 +123,18 @@ bool config_advanced_get_item(size_t index, config_item_info_t *info) {
         case cfg_advanced_archive_days: // archive_days
             info->value = g_rtc_config.advanced.archive_days;
             info->desc = "Archive logs in days";
+            info->min = 0;
+            info->max = 365;
             break;
         case cfg_advanced_stat_speed: // stat_screen_speed
             info->value = g_rtc_config.advanced.stat_screen_speed;
             info->desc = "Show stat screen speed up to (m/s)";
+            info->min = 0;
+            info->max = 5;
+            break;
+        case cfg_advanced_experimental_features: // experimental_features
+            info->value = g_rtc_config.advanced.experimental_features ? 1 : 0;
+            info->desc = "Enable experimental features";
             break;
 #if defined(CONFIG_LOGGER_STAT_SCREEN_ROTATION)
         case cfg_advanced_stat_screens_time: // stat_screens_time
@@ -133,8 +149,8 @@ bool config_advanced_get_item(size_t index, config_item_info_t *info) {
     return true;
 }
 
-static bool config_advanced_set_item_impl(size_t index, uint16_t val) {
-    FUNC_ENTRY_ARGSD(TAG, "index=%u, value=%hu", index, val);
+static bool config_advanced_set_item_impl(size_t index, void * _val) {
+    FUNC_ENTRY_ARGSD(TAG, "index=%u", index);
     if (!config_lock(-1)) {
         ELOG(TAG, "Failed to acquire config lock");
         return false;
@@ -143,6 +159,7 @@ static bool config_advanced_set_item_impl(size_t index, uint16_t val) {
     // O(1) lookup: index -> enum via advanced_group_items array
     // O(1) lookup: enum -> RTC field via switch
     uint8_t changed = 255;
+    uint16_t val = (uint16_t)(uintptr_t)_val;
     switch (index) {
 #if defined(CFG_ADVANCED_INCLUDE_PRIVATE_ITEMS)
         case cfg_advanced_screen_move_offset:
@@ -174,6 +191,18 @@ static bool config_advanced_set_item_impl(size_t index, uint16_t val) {
                 changed = index;
             }
             break;
+        case cfg_advanced_hostname:
+            if(set_string_from_json(&g_rtc_config.advanced.hostname[0], (const char *)_val)) {
+                changed = cfg_advanced_hostname;
+            }
+            break;
+        case cfg_advanced_experimental_features:
+            if(g_rtc_config.advanced.experimental_features != val) {
+                FUNC_ENTRY_ARGSD(TAG, "Experimental features changed to %hhu", val);
+                g_rtc_config.advanced.experimental_features = val;
+                changed = index;
+            }
+            break;
 #if defined(CONFIG_LOGGER_STAT_SCREEN_ROTATION)
         case cfg_advanced_stat_screens_time:
             if(g_rtc_config.advanced.stat_screens_time != val) {
@@ -188,7 +217,7 @@ static bool config_advanced_set_item_impl(size_t index, uint16_t val) {
             return false;
     }
     if (changed != 255) {
-        unified_config_save();
+        unified_config_save_by_submodule(SCFG_GROUP_ADVANCED);
         // Notify all observers of change
         config_observer_notify(SCFG_GROUP_ADVANCED, index);
     }
@@ -200,8 +229,11 @@ bool config_advanced_set_item(size_t index, const char *value) {
     if (!value) {
         return false;
     }
+    if(index == cfg_advanced_hostname) {
+        return config_advanced_set_item_impl(index, (void *)value);
+    }
     uint16_t val = strtoul(value, 0, 10);
-    return config_advanced_set_item_impl(index, val);
+    return config_advanced_set_item_impl(index, (void *)&val);
 }
 
 // Unified functions for advanced group

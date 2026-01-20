@@ -17,23 +17,17 @@ extern "C" {
 #define GPS_CFG_ENUM_PRE_N(l)  GPS_CFG_ENUM_PRE(l),
 #define GPS_CFG_ENUM_PRE_L(l, m) .GPS_CFG_ENUM_PRE(l) = (uint8_t)(m),
 #define GPS_STAT_S(a) uint8_t a;
+#define GPS_STAT_BITFIELD(a) uint8_t a : 1;
+#define GPS_STAT_BITFIELD_S(a) .## log_ ## a = 1,
+#define GPS_LOG_BITFIELD(a) uint8_t log_ ## a : 1;
 #define GPS_STAT_D(l) GPS_CFG_ENUM_PRE_L(l, 1)
 #define CFG_ENUM_GPS(l) GPS_CFG_ENUM_PRE(l),
-
-#if defined (CONFIG_GPS_LOG_GPY)
-#define CFG_GPS_USER_FILE_ITEMS_LL(l) l(log_gpy)
-#else
-#define CFG_GPS_USER_FILE_ITEMS_LL(l)
-#endif
-
+ 
 #define CFG_GPS_USER_FILE_ITEMS(l) \
  l(log_txt) \
- l(log_ubx) \
- l(log_sbp) \
- l(log_gpx) \
- CFG_GPS_USER_FILE_ITEMS_LL(l) \
+ l(log_format) \
  l(log_ubx_nav_sat)
- 
+
 #define CFG_GPS_ITEMS(l) l(timezone) l(speed_unit)
 
 #define CFG_GPS_STAT_SCREENS_ITEMS(l) l(stat_screens)
@@ -66,6 +60,19 @@ extern const size_t file_date_time_items_count;
 extern const char * const timezone_items[];
 extern const size_t timezone_items_count;
 
+#if defined (CONFIG_GPS_LOG_GPY)
+#define LOG_FORMAT_ITEM_LIST(l) l(sbp) l(ubx) l(gpx) l(gpy)
+#else
+#define LOG_FORMAT_ITEM_LIST(l) l(sbp) l(ubx) l(gpx)
+#endif
+#define LOG_FORMAT_ENUM(l) log_format_##l,
+enum log_format_items_e {
+    LOG_FORMAT_ITEM_LIST(LOG_FORMAT_ENUM)
+    log_format_max
+};
+extern const char * const log_format_items[];
+extern const size_t log_format_items_count;
+
 typedef enum {
     CFG_GPS_ITEM_LIST(GPS_CFG_ENUM_PRE_N)
 } gps_cfg_item_t;
@@ -86,6 +93,8 @@ typedef enum {
     l(stat_stat1) \
     l(stat_stat2) \
     l(stat_avg_a500)
+
+
 extern const char * const gps_stat_screen_items[];
 extern const size_t gps_stat_screen_item_count;
 
@@ -93,49 +102,58 @@ enum stat_screen_items_e {
     STAT_SCREEN_ITEM_LIST(ENUM)
 };
 
-typedef struct cfg_gps_stat_screens_s {
-    STAT_SCREEN_ITEM_LIST(GPS_STAT_S)
+typedef union cfg_gps_stat_screens_u {
+    struct {
+        STAT_SCREEN_ITEM_LIST(GPS_STAT_BITFIELD)
+    } bits;
+    uint16_t value;
 } cfg_gps_stat_screens_t;
 
+typedef union cfg_gps_log_enables_u {
+    struct {
+        uint8_t log_txt : 1;
+        LOG_FORMAT_ITEM_LIST(GPS_LOG_BITFIELD)
+#if ! defined(CONFIG_GPS_LOG_GPY)
+        uint8_t reserved : 1;
+#endif
+        uint8_t log_ubx_nav_sat : 1;
+    } bits;
+    uint8_t value;
+} cfg_gps_log_enables_t;
+
 #define GPS_CFG_STAT_SCREENS_DEFAULTS() { \
-    STAT_SCREEN_ITEM_LIST(GPS_STAT_D) \
+    STAT_SCREEN_ITEM_LIST(GPS_STAT_BITFIELD_S) \
 }
 
 #define GPS_UBX_FILE_MAX 24
 
 typedef struct cfg_gps_s {
-    speed_unit_item_t speed_unit;      // 0 = m/s, 1 = km/h, 2 = knots    
-    float timezone;          // choice for timedifference in hours with UTC, for Belgium 1 or 2 (summertime)
+    // Version tracking for migration
+    uint16_t version;
+    // Byte-aligned fields (1 byte each)
+    speed_unit_item_t speed_unit;      // 0 = m/s, 1 = km/h, 2 = knots, 3 = mph
+    uint8_t file_date_time;             // 0=mac_index, 1=date_time, 2=date_time_name
+    cfg_gps_log_enables_t log_enables;  // Bitfield for GPS logging enables (packed)
     
-    // GPS logging enables
-    bool log_txt;
-    bool log_ubx;
-    bool log_sbp;
-    bool log_gpx;
-    bool log_gpy;
-    bool log_ubx_nav_sat;
+    // 2-byte aligned field
+    cfg_gps_stat_screens_t stat_screens;// Bitfield for enabled stat screens (uint16_t)
     
-    // GPS file settings
-    uint8_t file_date_time;  // 0=mac_index, 1=date_time, 2=date_time_name
+    // 4-byte aligned field (float)
+    float timezone;                     // UTC offset in hours
+    
+    // String field (24 bytes)
     char ubx_file[GPS_UBX_FILE_MAX];    // UBX filename base
-    
-    // Statistics screen configuration
-    uint16_t stat_screens;    // Bitfield for enabled stat screens
-} cfg_gps_t;
+} __attribute__((packed, aligned(4))) cfg_gps_t;
 // #define L_CONFIG_GPS_FIELDS sizeof(struct cfg_gps_s)
 
 #define CFG_GPS_DEFAULTS() { \
+    .version = 1, \
     .speed_unit = kmh, \
+    .file_date_time = 2, \
+    .log_enables.value = 0x03, \
+    .stat_screens.value = 0x01FF, \
     .timezone = 2, \
-    .log_txt = true, \
-    .log_ubx = false, \
-    .log_sbp = true, \
-    .log_gpx = true, \
-    .log_gpy = true, \
-    .log_ubx_nav_sat = false, \
-    .file_date_time = 1, \
     .ubx_file = "GPSDATA", \
-    .stat_screens = 0x01FF, \
 }
 
 // extern cfg_gps_t c_gps_cfg;
@@ -150,7 +168,7 @@ float convert_speed(float speed, speed_unit_item_t unit);
 
 struct strbf_s;
 bool config_gps_value_str(size_t index, struct strbf_s *sb, uint8_t* type);
-bool get_gps_item_values(size_t index, struct strbf_s *sb);
+uint8_t get_gps_item_values(size_t index, struct strbf_s *sb);
 bool get_gps_item_descriptions(size_t index, struct strbf_s *sb);
 
 uint16_t config_stat_screen_get_next_value(int num);

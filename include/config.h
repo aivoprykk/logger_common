@@ -9,7 +9,7 @@ extern "C" {
 #include "config_observer.h"
 #include "config_screen.h"
 #include "config_fw_update.h"
-#include "config_main.h"
+#include "config_wifi.h"
 #include "config_admin.h"
 #include "config_ubx.h"
 #include "config_gps.h"
@@ -17,34 +17,37 @@ extern "C" {
 #include "config_manager.h"
 
 #define SCFG_GROUP_LIST(l) \
-l(GROUP_UBX) \
-l(GROUP_GPS) \
-l(GROUP_SCREEN) \
-l(GROUP_FW_UPDATE)
+l(UBX) \
+l(GPS) \
+l(SCREEN) \
+l(FW_UPDATE)
 
 #define SCFG_GROUP_SCR_LIST(l) \
-l(GROUP_STAT_SCREENS)
+l(STAT_SCREENS)
 
 #define SCFG_GROUP_OTHER_LIST(l) \
-l(GROUP_MAIN) \
-l(GROUP_ADVANCED) \
-l(GROUP_ADMIN)
+SCFG_GRP_WIFI(l) \
+l(ADVANCED) \
+SCFG_GRP_ADMIN(l)
 
 // Configuration groups (for screen/REST API access)
 // These represent conceptual groups, not individual items
-#define ENUM_ALL(l) SCFG_##l,
+#define ENUM_ALL(l) SCFG_GROUP_##l,
 typedef enum sconfig_group_e {
     SCFG_GROUP_LIST(ENUM_ALL)
     SCFG_GROUP_OTHER_LIST(ENUM_ALL)
     SCFG_GROUP_COUNT
 } sconfig_group_t;
 
-#define ENUM_CYCLE(l) SCFG_CYCLE_##l,
+#define ENUM_CYCLE(l) SCFG_CYCLE_GROUP_##l,
 typedef enum sconfig_cycle_group_e { 
     SCFG_GROUP_LIST(ENUM_CYCLE)
     SCFG_GROUP_SCR_LIST(ENUM_CYCLE)
     SCFG_CYCLE_GROUP_COUNT
 } sconfig_cycle_group_t;
+
+const char * sconfig_group_names(sconfig_group_t id);
+bool config_manager_is_group_default_hidden(sconfig_group_t group);
 
 #ifdef __cplusplus
 }

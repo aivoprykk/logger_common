@@ -26,6 +26,7 @@ CFG_SCREEN_MOVE_OFFSET_ITEMS(l)
 l(stat_speed) \
 l(archive_days) \
 l(hostname) \
+l(experimental_features) \
 CFG_STAT_SCREEN_TIME_ITEMS(l)
 
 #define CFG_ADVANCED_ITEM_LIST(l) \
@@ -40,6 +41,7 @@ typedef struct cfg_advanced_s {
     uint16_t archive_days;       // how many days files will be moved to the "Archive" dir
     char hostname[32];           // your hostname
     uint8_t stat_screen_speed;   // max speed in m/s for showing Stat screens
+    uint8_t experimental_features; // bool for enabling experimental features
 #if defined(CONFIG_LOGGER_STAT_SCREEN_ROTATION)
     uint8_t stat_screens_time; // time between switching stat_screens
 #define STAT_SCREEN_TIME_DEFAULT .stat_screens_time = 2,
@@ -59,6 +61,7 @@ typedef struct cfg_advanced_s {
     .archive_days = 30, \
     .hostname = "esp", \
     .stat_screen_speed = 1, \
+    .experimental_features = 0, \
     STAT_SCREEN_TIME_DEFAULT \
     SCREEN_MOVE_OFFSET_DEFAULT \
 }
@@ -70,7 +73,7 @@ enum cfg_advanced_item_e {
 
 struct strbf_s;
 bool config_advanced_value_str(size_t index, struct strbf_s *sb, uint8_t* type);
-bool get_advanced_item_values(size_t index, struct strbf_s *sb);
+uint8_t get_advanced_item_values(size_t index, struct strbf_s *sb);
 bool get_advanced_item_descriptions(size_t index, struct strbf_s *sb);
 
 #ifdef __cplusplus

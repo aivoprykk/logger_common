@@ -6,8 +6,9 @@ extern "C" {
 #endif
 #include "logger_common.h"
 
-#define CFG_MAIN_ITEM_LIST(l) \
-l(bar_length) \
+#define SCFG_GRP_WIFI(l) l(WIFI)
+
+#define CFG_WIFI_ITEM_LIST(l) \
 l(ssid) \
 l(password) \
 l(ssid1) \
@@ -15,8 +16,7 @@ l(password1) \
 l(ssid2) \
 l(password2) \
 l(ssid3) \
-l(password3) \
-l(sleep_info)
+l(password3)
 
 extern const char * const config_main_items[];
 extern const size_t config_main_item_count;
@@ -29,30 +29,28 @@ typedef struct cfg_wifi_sta_s {
 #define CFG_SSID_MAX 4
 
 typedef struct cfg_main_s {
-    uint16_t bar_length;         // Bar length in meters
-    struct cfg_wifi_sta_s wifi_sta[CFG_SSID_MAX];
-    char sleep_info[32];         // Sleep info string
-} cfg_main_t;
+    uint16_t version;
+     struct cfg_wifi_sta_s wifi_sta[CFG_SSID_MAX];
+} __attribute__((packed, aligned(4))) cfg_main_t;
 
 #define CFG_MAIN_DEFAULTS() { \
-    .bar_length = 1852, \
+    .version = 1, \
     .wifi_sta = { \
         { .ssid = "ssid1", .password = "password1" }, \
         { {0}, {0} }, \
         { {0}, {0} }, \
         { {0}, {0} }, \
     }, \
-    .sleep_info = "ESP GPS", \
 }
 
-#define CFG_ENUM_MAIN(l) cfg_main_##l,
-enum cfg_main_item_e {
-    CFG_MAIN_ITEM_LIST(CFG_ENUM_MAIN)
+#define CFG_ENUM_WIFI(l) cfg_main_##l,
+enum cfg_wifi_item_e {
+    CFG_WIFI_ITEM_LIST(CFG_ENUM_WIFI)
 };
 
 struct strbf_s;
 bool config_main_value_str(size_t index, struct strbf_s *sb, uint8_t* type);
-bool get_main_item_values(size_t index, struct strbf_s *sb);
+uint8_t get_main_item_values(size_t index, struct strbf_s *sb);
 bool get_main_item_descriptions(size_t index, struct strbf_s *sb);
 
 #ifdef __cplusplus

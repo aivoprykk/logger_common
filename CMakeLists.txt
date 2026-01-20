@@ -9,7 +9,7 @@ SET(SRCS
     config_manager_advanced.c
     config_manager_fw_update.c
     config_manager_gps.c
-    config_manager_main.c
+    config_manager_wifi.c
     config_manager_screen.c
     config_manager_ubx.c
     config_observer.c

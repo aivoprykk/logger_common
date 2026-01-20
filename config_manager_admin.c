@@ -1,21 +1,22 @@
 #include <string.h>
 #include "common_private.h"
 
+#if defined (CONFIG_LOGGER_COMMON_ENABLE_ADMIN_CONFIG)
 static const char *TAG = "config_admin";
 
 const char * const config_admin_items[] = { CFG_ADMIN_ITEM_LIST(STRINGIFY) };
 const size_t config_admin_item_count = sizeof(config_admin_items) / sizeof(config_admin_items[0]);
 
-bool get_admin_item_values(size_t index, struct strbf_s *sb) {
+uint8_t get_admin_item_values(size_t index, struct strbf_s *sb) {
     switch(index) {
         case cfg_admin_admin_username:
         case cfg_admin_admin_password:
             strbf_puts(sb, ",\"depends\":\"admin_auth\"");
+            return 0;
             break;
         default:
-            return false;
+            return 0;
     }
-    return true;
 }
 
 bool get_admin_item_descriptions(size_t index, struct strbf_s *sb) {
@@ -115,7 +116,7 @@ static bool config_admin_set_item_impl(size_t index, uint16_t val, const char *v
             return true;
     }
     if (changed != 255) {
-        unified_config_save();
+        unified_config_save_by_submodule(SCFG_GROUP_ADMIN);
         // Notify all observers of change
         config_observer_notify(SCFG_GROUP_ADMIN, index);
     }
@@ -131,3 +132,4 @@ bool config_admin_set_item(size_t index, const char *value) {
     uint16_t val = (index == cfg_admin_admin_auth) ? strtoul(value, 0, 10) : 0;
     return config_admin_set_item_impl(index, val, value);
 }
+#endif

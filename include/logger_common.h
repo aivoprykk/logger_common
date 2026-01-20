@@ -126,6 +126,8 @@ typedef struct m_config_item_s {
     const char * name;
     int pos;
     uint32_t value;
+    uint32_t min;
+    uint32_t max;
     const char *desc;
 } m_config_item_t;
 
