@@ -4,7 +4,7 @@
  */
 
 #include "logger_buffer_pool.h"
-#include "esp_log.h"
+#include "common_private.h"
 #include <string.h>
 
 static const char *TAG = "buffer_pool";
@@ -72,7 +72,7 @@ static int find_available_buffer(logger_buffer_size_t min_size_type) {
 }
 
 esp_err_t logger_buffer_pool_init(void) {
-    // ESP_LOGI(TAG, "[%s] initialized: %d", __FUNCTION__, g_buffer_pool.initialized);
+    // ILOG(TAG, "[%s] initialized: %d", __FUNCTION__, g_buffer_pool.initialized);
     if (g_buffer_pool.initialized) {
         return ESP_OK;
     }
@@ -88,7 +88,7 @@ esp_err_t logger_buffer_pool_init(void) {
     // Create mutex
     g_buffer_pool.mutex = xSemaphoreCreateMutex();
     if (g_buffer_pool.mutex == NULL) {
-        ESP_LOGE(TAG, "Failed to create buffer pool mutex");
+        ELOG(TAG, "Failed to create buffer pool mutex");
         return ESP_FAIL;
     }
 
@@ -97,7 +97,7 @@ esp_err_t logger_buffer_pool_init(void) {
     g_buffer_pool.next_allocation_id = 1;
     g_buffer_pool.initialized = true;
 
-    ESP_LOGI(TAG, "Buffer pool initialized with %d buffers (%.1fKB total)", 
+    ILOG(TAG, "Buffer pool initialized with %d buffers (%.1fKB total)", 
              LOGGER_BUFFER_POOL_COUNT,
              (4 * LOGGER_SMALL_BUFFER_SIZE + 3 * LOGGER_MEDIUM_BUFFER_SIZE + 1 * LOGGER_LARGE_BUFFER_SIZE) / 1024.0f);
 
@@ -105,7 +105,7 @@ esp_err_t logger_buffer_pool_init(void) {
 }
 
 esp_err_t logger_buffer_pool_deinit(void) {
-    ESP_LOGI(TAG, "[%s] initialized: %d", __FUNCTION__, g_buffer_pool.initialized);
+    ILOG(TAG, "[%s] initialized: %d", __FUNCTION__, g_buffer_pool.initialized);
     if (!g_buffer_pool.initialized)  return ESP_OK;
     if (xSemaphoreTake(g_buffer_pool.mutex, pdMS_TO_TICKS(1000)) == pdTRUE) {
         // Check for leaked buffers
@@ -113,12 +113,12 @@ esp_err_t logger_buffer_pool_deinit(void) {
         for (int i = 0; i < LOGGER_BUFFER_POOL_COUNT; i++) {
             if (g_buffer_pool.in_use[i]) {
                 leaked_count++;
-                ESP_LOGW(TAG, "Buffer %d still in use during deinit (usage: %d, id: %lu)", 
+                WLOG(TAG, "Buffer %d still in use during deinit (usage: %d, id: %" PRIu32 ")", 
                         i, g_buffer_pool.buffer_usage[i], g_buffer_pool.allocation_ids[i]);
             }
         }
         if (leaked_count > 0) {
-            ESP_LOGW(TAG, "Found %d leaked buffers during deinit", leaked_count);
+            WLOG(TAG, "Found %d leaked buffers during deinit", leaked_count);
         }
 
         xSemaphoreGive(g_buffer_pool.mutex);
@@ -126,9 +126,9 @@ esp_err_t logger_buffer_pool_deinit(void) {
     // Delete mutex
     vSemaphoreDelete(g_buffer_pool.mutex);
     g_buffer_pool.mutex = NULL;
-    ESP_LOGI(TAG, "Buffer pool deinitialized");
+    ILOG(TAG, "Buffer pool deinitialized");
     g_buffer_pool.initialized = false;
-    
+
     return ESP_OK;
 }
 
@@ -137,7 +137,7 @@ esp_err_t logger_buffer_pool_alloc(logger_buffer_size_t size_type,
                                   logger_buffer_handle_t *handle,
                                   uint32_t timeout_ms) {
     if (!g_buffer_pool.initialized) {
-        ESP_LOGE(TAG, "Buffer pool not initialized");
+        ELOG(TAG, "Buffer pool not initialized");
         return ESP_ERR_INVALID_STATE;
     }
 
@@ -202,7 +202,7 @@ esp_err_t logger_buffer_pool_free(logger_buffer_handle_t *handle) {
     }
 
     if (xSemaphoreTake(g_buffer_pool.mutex, pdMS_TO_TICKS(100)) != pdTRUE) {
-        ESP_LOGE(TAG, "Failed to acquire mutex for free");
+        ELOG(TAG, "Failed to acquire mutex for free");
         return ESP_ERR_TIMEOUT;
     }
 
@@ -218,13 +218,13 @@ esp_err_t logger_buffer_pool_free(logger_buffer_handle_t *handle) {
 
     if (buffer_index < 0) {
         xSemaphoreGive(g_buffer_pool.mutex);
-        ESP_LOGE(TAG, "Invalid buffer handle (ptr=%p, id=%lu)", handle->buffer, handle->allocation_id);
+        ELOG(TAG, "Invalid buffer handle (ptr=%p, id=%" PRIu32 ")", handle->buffer, handle->allocation_id);
         return ESP_ERR_INVALID_ARG;
     }
 
     if (!g_buffer_pool.in_use[buffer_index]) {
         xSemaphoreGive(g_buffer_pool.mutex);
-        ESP_LOGE(TAG, "Double free detected for buffer %d", buffer_index);
+        ELOG(TAG, "Double free detected for buffer %d", buffer_index);
         return ESP_ERR_INVALID_STATE;
     }
 

@@ -1,16 +1,13 @@
 /**
  * @file logger_buffer_pool.h
  * @brief Centralized buffer pool for ESP GPS Logger components
- * 
+ *
  * Provides shared buffer management across logger_http, gps_log, and other components
  * to reduce stack usage and prevent memory fragmentation.
  */
 
 #ifndef A75D3C76_0C6C_4D9E_A9A4_A6137FFBDE38
 #define A75D3C76_0C6C_4D9E_A9A4_A6137FFBDE38
-
-#ifndef LOGGER_BUFFER_POOL_H
-#define LOGGER_BUFFER_POOL_H
 
 #include <stddef.h>
 #include <stdbool.h>
@@ -80,35 +77,35 @@ typedef struct {
 
 /**
  * @brief Initialize the logger buffer pool
- * 
+ *
  * @return ESP_OK on success, error code on failure
  */
 esp_err_t logger_buffer_pool_init(void);
 
 /**
  * @brief Deinitialize the logger buffer pool
- * 
+ *
  * @return ESP_OK on success, error code on failure
  */
 esp_err_t logger_buffer_pool_deinit(void);
 
 /**
  * @brief Allocate a buffer from the pool
- * 
+ *
  * @param size_type Buffer size category
  * @param usage_type Buffer usage type for statistics
  * @param handle Output handle for allocated buffer
  * @param timeout_ms Timeout in milliseconds (0 for no timeout)
  * @return ESP_OK on success, ESP_ERR_TIMEOUT on timeout, ESP_FAIL on other errors
  */
-esp_err_t logger_buffer_pool_alloc(logger_buffer_size_t size_type, 
+esp_err_t logger_buffer_pool_alloc(logger_buffer_size_t size_type,
                                   logger_buffer_usage_t usage_type,
                                   logger_buffer_handle_t *handle,
                                   uint32_t timeout_ms);
 
 /**
  * @brief Release a buffer back to the pool
- * 
+ *
  * @param handle Pointer to buffer handle (will be cleared)
  * @return ESP_OK on success, error code on failure
  */
@@ -116,7 +113,7 @@ esp_err_t logger_buffer_pool_free(logger_buffer_handle_t *handle);
 
 /**
  * @brief Get buffer pool statistics
- * 
+ *
  * @param stats Output statistics structure
  * @return ESP_OK on success, error code on failure
  */
@@ -124,21 +121,21 @@ esp_err_t logger_buffer_pool_get_stats(logger_buffer_pool_stats_t *stats);
 
 /**
  * @brief Reset buffer pool statistics
- * 
+ *
  * @return ESP_OK on success, error code on failure
  */
 esp_err_t logger_buffer_pool_reset_stats(void);
 
 /**
  * @brief Check if buffer pool is initialized
- * 
+ *
  * @return true if initialized, false otherwise
  */
 bool logger_buffer_pool_is_initialized(void);
 
 /**
  * @brief Get available buffer count for a specific size
- * 
+ *
  * @param size_type Buffer size category
  * @return Number of available buffers, -1 on error
  */
@@ -163,8 +160,5 @@ int logger_buffer_pool_get_available(logger_buffer_size_t size_type);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* LOGGER_BUFFER_POOL_H */
-
 
 #endif /* A75D3C76_0C6C_4D9E_A9A4_A6137FFBDE38 */

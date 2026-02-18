@@ -17,6 +17,13 @@ extern "C" {
 #define LOG_DEBUG_NUM 1
 #define LOG_TRACE_NUM 0
 
+// Timestamp formatting helpers (sec.ms.us from esp_timer_get_time)
+#define LOG_TS_FMT "%llu.%03llu.%03llu"
+#define LOG_TS_ARGS(ts_us) \
+    (unsigned long long)((ts_us) / 1000000ULL), \
+    (unsigned long long)(((ts_us) / 1000ULL) % 1000ULL), \
+    (unsigned long long)((ts_us) % 1000ULL)
+
 #ifdef USE_ESP_LOG
 #define LOGE(tag, fmt, ...) ESP_LOGE(tag, fmt, ##__VA_ARGS__)
 #define LOGW(tag, fmt, ...) ESP_LOGW(tag, fmt, ##__VA_ARGS__)
@@ -25,10 +32,22 @@ extern "C" {
 #define LOGV(tag, fmt, ...) ESP_LOGV(tag, fmt, ##__VA_ARGS__)
 #else
 #define LOGE(tag, fmt, ...) printf("E: %s: " fmt "\n", tag, ##__VA_ARGS__)
-#define LOGW(tag, fmt, ...) printf("W: %s: " fmt "\n", tag, ##__VA_ARGS__)
-#define LOGI(tag, fmt, ...) printf("I: %s: " fmt "\n", tag, ##__VA_ARGS__)
-#define LOGD(tag, fmt, ...) printf("D: %s: " fmt "\n", tag, ##__VA_ARGS__)
-#define LOGV(tag, fmt, ...) printf("T: %s: " fmt "\n", tag, ##__VA_ARGS__)
+#define LOGW(tag, fmt, ...) do { \
+    uint64_t _ts = esp_timer_get_time(); \
+    printf("W: (" LOG_TS_FMT ") %s: " fmt "\n", LOG_TS_ARGS(_ts), tag, ##__VA_ARGS__); \
+} while(0)
+#define LOGI(tag, fmt, ...) do { \
+    uint64_t _ts = esp_timer_get_time(); \
+    printf("I: (" LOG_TS_FMT ") %s: " fmt "\n", LOG_TS_ARGS(_ts), tag, ##__VA_ARGS__); \
+} while(0)
+#define LOGD(tag, fmt, ...) do { \
+    uint64_t _ts = esp_timer_get_time(); \
+    printf("D: (" LOG_TS_FMT ") %s: " fmt "\n", LOG_TS_ARGS(_ts), tag, ##__VA_ARGS__); \
+} while(0)
+#define LOGV(tag, fmt, ...) do { \
+    uint64_t _ts = esp_timer_get_time(); \
+    printf("T: (" LOG_TS_FMT ") %s: " fmt "\n", LOG_TS_ARGS(_ts), tag, ##__VA_ARGS__); \
+} while(0)
 #endif
 
 #if (C_LOG_LEVEL <= LOG_ERR_NUM) // 4 - error
@@ -164,6 +183,13 @@ extern "C" {
 #else
 #define FUNC_ENTRYW(tag) ((void)0)
 #define FUNC_ENTRY_ARGW(tag, fmt, ...) ((void)0)
+#endif
+#if (C_LOG_LEVEL <= LOG_ERR_NUM) // 4 - error level for function entries
+#define FUNC_ENTRYE(tag) ELOG(tag, "[%s]", __func__)
+#define FUNC_ENTRY_ARGE(tag, fmt, ...) ELOG(tag, "[%s] " fmt, __func__, ##__VA_ARGS__)
+#else
+#define FUNC_ENTRYE(tag) ((void)0)
+#define FUNC_ENTRY_ARGE(tag, fmt, ...) ((void)0)
 #endif
 
 #ifdef __cplusplus

@@ -1,6 +1,4 @@
-#include "config_observer.h"
-#include "esp_log.h"
-#include <string.h>
+#include "common_private.h"
 
 static const char *TAG = "config_observer";
 
@@ -11,31 +9,31 @@ static size_t g_observer_count = 0;
 void config_observer_init(void) {
     memset(g_observers, 0, sizeof(g_observers));
     g_observer_count = 0;
-    ESP_LOGI(TAG, "Observer system initialized");
+    ILOG(TAG, "Observer system initialized");
 }
 
 bool config_observer_add(config_change_callback_t callback) {
     if (!callback) {
-        ESP_LOGW(TAG, "Cannot add NULL callback");
+        WLOG(TAG, "Cannot add NULL callback");
         return false;
     }
-    
+
     // Check if already registered
     for (size_t i = 0; i < g_observer_count; i++) {
         if (g_observers[i] == callback) {
-            ESP_LOGW(TAG, "Callback already registered");
+            WLOG(TAG, "Callback already registered");
             return true; // Already registered, consider it success
         }
     }
-    
+
     // Add new observer
     if (g_observer_count < CONFIG_MAX_OBSERVERS) {
         g_observers[g_observer_count++] = callback;
-        ESP_LOGI(TAG, "Observer added (total: %u)", g_observer_count);
+        ILOG(TAG, "Observer added (total: %u)", g_observer_count);
         return true;
     }
-    
-    ESP_LOGE(TAG, "Observer list full (max: %d)", CONFIG_MAX_OBSERVERS);
+
+    ELOG(TAG, "Observer list full (max: %d)", CONFIG_MAX_OBSERVERS);
     return false;
 }
 
@@ -43,7 +41,7 @@ bool config_observer_remove(config_change_callback_t callback) {
     if (!callback) {
         return false;
     }
-    
+
     // Find and remove the callback
     for (size_t i = 0; i < g_observer_count; i++) {
         if (g_observers[i] == callback) {
@@ -52,18 +50,18 @@ bool config_observer_remove(config_change_callback_t callback) {
                 g_observers[j] = g_observers[j + 1];
             }
             g_observers[--g_observer_count] = NULL;
-            ESP_LOGI(TAG, "Observer removed (remaining: %u)", g_observer_count);
+            ILOG(TAG, "Observer removed (remaining: %u)", g_observer_count);
             return true;
         }
     }
-    
-    ESP_LOGW(TAG, "Observer not found");
+
+    WLOG(TAG, "Observer not found");
     return false;
 }
 
 void config_observer_notify(size_t group, size_t index) {
-    ESP_LOGD(TAG, "Notifying %u observers: group=%u, index=%u", g_observer_count, group, index);
-    
+    DLOG(TAG, "Notifying %u observers: group=%u, index=%u", g_observer_count, group, index);
+
     for (size_t i = 0; i < g_observer_count; i++) {
         if (g_observers[i]) {
             g_observers[i](group, index);

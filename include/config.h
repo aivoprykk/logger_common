@@ -4,47 +4,92 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include "sconfig.h"
-#include "config_lock.h"
-#include "config_observer.h"
-#include "config_screen.h"
-#include "config_fw_update.h"
-#include "config_main.h"
-#include "config_admin.h"
-#include "config_ubx.h"
-#include "config_gps.h"
-#include "config_advanced.h"
-#include "config_manager.h"
 
-#define SCFG_GROUP_LIST(l) \
-l(GROUP_UBX) \
-l(GROUP_GPS) \
-l(GROUP_SCREEN) \
-l(GROUP_FW_UPDATE)
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
-#define SCFG_GROUP_SCR_LIST(l) \
-l(GROUP_STAT_SCREENS)
+// ============================================================================
+// Configuration Item Type Definitions (migrated from sconfig)
+// ============================================================================
 
-#define SCFG_GROUP_OTHER_LIST(l) \
-l(GROUP_MAIN) \
-l(GROUP_ADVANCED) \
-l(GROUP_ADMIN)
+typedef enum {
+	SCONFIG_ITEM_TYPE_BOOL = 0,
+	SCONFIG_ITEM_TYPE_INT8,
+	SCONFIG_ITEM_TYPE_INT16,
+	SCONFIG_ITEM_TYPE_INT32,
+	SCONFIG_ITEM_TYPE_INT64,
+	SCONFIG_ITEM_TYPE_UINT8,
+	SCONFIG_ITEM_TYPE_UINT16,
+	SCONFIG_ITEM_TYPE_UINT32,
+	SCONFIG_ITEM_TYPE_UINT64,
+	SCONFIG_ITEM_TYPE_STRING,
+	SCONFIG_ITEM_TYPE_BLOB,
+	SCONFIG_ITEM_TYPE_COLOR,
+	SCONFIG_ITEM_TYPE_IP,
+	SCONFIG_ITEM_TYPE_MAX
+} sconfig_item_type_t;
 
-// Configuration groups (for screen/REST API access)
-// These represent conceptual groups, not individual items
-#define ENUM_ALL(l) SCFG_##l,
-typedef enum sconfig_group_e {
-    SCFG_GROUP_LIST(ENUM_ALL)
-    SCFG_GROUP_OTHER_LIST(ENUM_ALL)
-    SCFG_GROUP_COUNT
-} sconfig_group_t;
+typedef union {
+	bool bool1;
+	int8_t int8;
+	int16_t int16;
+	int32_t int32;
+	int64_t int64;
+	uint8_t uint8;
+	uint16_t uint16;
+	uint32_t uint32;
+	uint64_t uint64;
+	char *str;
+	struct blob {
+		uint8_t *data;
+		size_t length;
+	} blob;
+} sconfig_item_value_t;
 
-#define ENUM_CYCLE(l) SCFG_CYCLE_##l,
-typedef enum sconfig_cycle_group_e { 
-    SCFG_GROUP_LIST(ENUM_CYCLE)
-    SCFG_GROUP_SCR_LIST(ENUM_CYCLE)
-    SCFG_CYCLE_GROUP_COUNT
-} sconfig_cycle_group_t;
+typedef struct config_item {
+	char *key;
+	sconfig_item_type_t type;
+	bool secret;
+	sconfig_item_value_t def;
+
+	// Optional metadata for enhanced functionality
+	const char *description; // Human-readable description
+	const char *
+		*enum_names; // Array of string names for enum values (NULL terminated)
+	size_t enum_count;		  // Number of enum values
+	sconfig_item_value_t min; // Minimum value (for numeric types)
+	sconfig_item_value_t max; // Maximum value (for numeric types)
+	uint8_t group_id;		  // Group identifier for logical grouping
+} sconfig_item_t;
+
+#define CONFIG_VALUE_UNCHANGED "\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a"
+
+// ============================================================================
+
+// #define SCFG_GROUP_LIST(l) l(UBX) l(GPS) l(SCREEN) l(FW_UPDATE)
+
+// #define SCFG_GROUP_SCR_LIST(l) l(STAT_SCREENS)
+
+// #define SCFG_GROUP_OTHER_LIST(l)
+// 	SCFG_GRP_WIFI(l)
+// 	l(ADVANCED) SCFG_GRP_ADMIN(l)
+
+// // Configuration groups (for screen/REST API access)
+// // These represent conceptual groups, not individual items
+// #define ENUM_ALL(l) SCFG_GROUP_##l,
+// typedef enum sconfig_group_e {
+// 	SCFG_GROUP_LIST(ENUM_ALL) SCFG_GROUP_OTHER_LIST(ENUM_ALL) SCFG_GROUP_COUNT
+// } sconfig_group_t;
+
+// #define ENUM_CYCLE(l) SCFG_CYCLE_GROUP_##l,
+// typedef enum sconfig_cycle_group_e {
+// 	SCFG_GROUP_LIST(ENUM_CYCLE) SCFG_GROUP_SCR_LIST(ENUM_CYCLE)
+// 		SCFG_CYCLE_GROUP_COUNT
+// } sconfig_cycle_group_t;
+
+const char *sconfig_group_names(uint8_t id);
+bool config_manager_is_group_default_hidden(uint8_t group);
 
 #ifdef __cplusplus
 }

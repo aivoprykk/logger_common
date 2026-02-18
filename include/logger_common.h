@@ -5,9 +5,9 @@
 extern "C" {
 #endif
 
+#include "sdkconfig.h"
 #include <stddef.h>
 #include <stdint.h>
-#include "sdkconfig.h"
 
 #include "freertos/FreeRTOS.h"
 
@@ -30,7 +30,9 @@ extern "C" {
 #define QUOTE_CMD(x) QUOTE(x)
 
 // check if a character is a digit
-#define IS_ALNUM(x) (((x)>='a' && (x) <= 'z')) ||((x)>='A' && (x) <= 'Z') || (((x)>='0' && (x) <= '9'))
+#define IS_ALNUM(x)                                                            \
+	(((x) >= 'a' && (x) <= 'z')) || ((x) >= 'A' && (x) <= 'Z') ||              \
+		(((x) >= '0' && (x) <= '9'))
 
 #ifndef BIT
 #define BIT(x) (1UL << (uint8_t)(x))
@@ -38,24 +40,24 @@ extern "C" {
 
 // BIT_CHECK get a bit from a variable (bit 0-7)
 #ifndef BIT_GET
-#define BIT_GET(var, nr)	( (var) & BIT(nr) )
+#define BIT_GET(var, nr) ((var) & BIT(nr))
 #endif
-#define GETBIT(var, nr)	(BIT_GET(var, nr) ? 1 : 0 )
+#define GETBIT(var, nr) (BIT_GET(var, nr) ? 1 : 0)
 // BIT_SET set a bit to 1 (bit 0-7)
 #ifndef BIT_SET
-#define BIT_SET(var, nr)	((var) |= BIT(nr))
+#define BIT_SET(var, nr) ((var) |= BIT(nr))
 #endif
-#define SETBIT(var, nr)	BIT_SET(var, nr)
+#define SETBIT(var, nr) BIT_SET(var, nr)
 // BIT_CLEAR a bit to 0 (bit 0-7)
 #ifndef BIT_CLR
-#define BIT_CLR(var, nr)	((var) &= (~BIT(nr)))
+#define BIT_CLR(var, nr) ((var) &= (~BIT(nr)))
 #endif
-#define CLRBIT(var, nr)	BIT_CLR(var, nr)
+#define CLRBIT(var, nr) BIT_CLR(var, nr)
 // BIT_FLIP toggle a bit (bit 0-7)
 #ifndef BIT_TGL
-#define BIT_TGL(var, nr)	((var) ^= BIT(nr))
+#define BIT_TGL(var, nr) ((var) ^= BIT(nr))
 #endif
-#define FLIPBIT(var, nr)   BIT_TGL(var, nr)
+#define FLIPBIT(var, nr) BIT_TGL(var, nr)
 
 #define STRINGIFY_(x) #x
 #define STRINGIFY(x) STRINGIFY_(x),
@@ -68,21 +70,21 @@ extern "C" {
 #define ENUM_V(x, y) x = y,
 #define ENUM_VV(x, y, z) x##_##y = z,
 #define A_
-#define ADD(x) x|A_
+#define ADD(x) x | A_
 #define ADD_QUOTE(x) STRINGIFY_(x)
-#define JOIN_AGAIN(x, y) x ## y
+#define JOIN_AGAIN(x, y) x##y
 #define JOIN(x, y) JOIN_AGAIN(x, y)
 
 #define lengthof(x) (sizeof(x) / sizeof((x)[0]))
 
 enum units_e {
-    TWO_SECONDS = 2,
-    MS_50 = 50,
-    QUATER_SEC_IN_MS = 250,
-    HALF_SEC_IN_MS = 500,
-    ONE_K = 1000,
-    HALF_H_IN_SECS = 1800,
-    ONE_H_IN_SECS = 3600
+	TWO_SECONDS = 2,
+	MS_50 = 50,
+	QUATER_SEC_IN_MS = 250,
+	HALF_SEC_IN_MS = 500,
+	ONE_K = 1000,
+	HALF_H_IN_SECS = 1800,
+	ONE_H_IN_SECS = 3600
 };
 
 #define NUM_GE_3_DIG(x) ((x) >= 100)
@@ -119,26 +121,28 @@ enum units_e {
 #define METERS_PER_LATITUDE_DEGREE 111195.0f
 #define DEG_TO_METERS(x) ((x) * POW_2(METERS_PER_LATITUDE_DEGREE))
 #define EARTH_RADIUS_M 6371000.0
-#define ROUND_UP_TO_8(x)   (((x) + 7) & ~7U)  // Align to nearest 8 bits
+#define ROUND_UP_TO_8(x) (((x) + 7) & ~7U) // Align to nearest 8 bits
 // alternative: #define BYTE_PADDING(w) (((w + 7u) >> 3u) << 3u)
 
 typedef struct m_config_item_s {
-    const char * name;
-    int pos;
-    uint32_t value;
-    const char *desc;
+	const char *name;
+	int pos;
+	uint32_t value;
+	uint32_t min;
+	uint32_t max;
+	const char *desc;
 } m_config_item_t;
 
 struct tm;
 struct timeval;
 struct tm *get_local_time(struct tm *info);
-int c_set_time(struct tm *tm, uint32_t us, float timezone);
-int c_set_time_ts(int64_t sec, uint32_t us, float timezone);
-int c_set_time_ms(int64_t ms, uint32_t us, float timezone);
-struct tm * c_timeval_to_tm_utc(const struct timeval *tv, struct tm *result);
+int c_set_time(struct tm *tm, uint32_t us, int8_t timezone);
+int c_set_time_ts(int64_t sec, uint32_t us, int8_t timezone);
+int c_set_time_ms(int64_t ms, uint32_t us, int8_t timezone);
+struct tm *c_timeval_to_tm_utc(const struct timeval *tv, struct tm *result);
 
 #if (C_LOG_LEVEL <= LOG_INFO_NUM)
-esp_err_t task_memory_info(const char * task_name);
+esp_err_t task_memory_info(const char *task_name);
 #else
 #define task_memory_info(x) (void)(0)
 #endif
@@ -155,46 +159,49 @@ esp_err_t mem_info(void);
 #else
 #define mem_info() (void)(0)
 #endif
-int32_t smooth(const int32_t * array, const int32_t index, const uint32_t size, const uint8_t window_size);
+int32_t smooth(const int32_t *array, const int32_t index, const uint32_t size,
+			   const uint8_t window_size);
 
 // unsigned long get_micros();
 unsigned long get_millis();
-#define DELAY_MS(x) vTaskDelay((x + (portTICK_PERIOD_MS - 1)) / portTICK_PERIOD_MS)
+#define DELAY_MS(x)                                                            \
+	vTaskDelay((x + (portTICK_PERIOD_MS - 1)) / portTICK_PERIOD_MS)
 inline void delay_ms(uint32_t ms) { DELAY_MS(ms); }
 
 inline void uint8_to_hex_string(uint8_t value, char *hex_str) {
-    const char hex_chars[] = "0123456789ABCDEF";
-    hex_str[0] = hex_chars[(value >> 4u) & 0x0Fu]; // Extract high nibble
-    hex_str[1] = hex_chars[value & 0x0Fu];        // Extract low nibble
-    hex_str[2] = '\0';                           // Null-terminate the string
+	const char hex_chars[] = "0123456789ABCDEF";
+	hex_str[0] = hex_chars[(value >> 4u) & 0x0Fu]; // Extract high nibble
+	hex_str[1] = hex_chars[value & 0x0Fu];		   // Extract low nibble
+	hex_str[2] = '\0';							   // Null-terminate the string
 }
 
 inline void uint32_to_uint8_array(uint32_t value, uint8_t array[4]) {
-    array[3] = (uint8_t)((value >> 24u) & 0xFFu);
-    array[2] = (uint8_t)((value >> 16u) & 0xFFu);
-    array[1] = (uint8_t)((value >> 8u) & 0xFFu);
-    array[0] = (uint8_t)(value & 0xFF);
+	array[3] = (uint8_t)((value >> 24u) & 0xFFu);
+	array[2] = (uint8_t)((value >> 16u) & 0xFFu);
+	array[1] = (uint8_t)((value >> 8u) & 0xFFu);
+	array[0] = (uint8_t)(value & 0xFF);
 }
 
 inline void mac_to_char(uint8_t *mac, char *mac_str, uint8_t start) {
-    uint8_t i = start, j = 6;
-    for (;i < j; i++) {
-        uint8_to_hex_string(mac[i], &mac_str[(i-start) * 2]);
-    }
-    mac_str[(j-start) * 2] = 0;
+	uint8_t i = start, j = 6;
+	for (; i < j; i++) {
+		uint8_to_hex_string(mac[i], &mac_str[(i - start) * 2]);
+	}
+	mac_str[(j - start) * 2] = 0;
 }
 
 #define TOLOWER_CHAR(c) (((c) >= 'A' && (c) <= 'Z') ? ((c) + 32) : (c))
 
 inline void str_tolower(char *s) {
-    while (*s) {
-        if (*s >= 'A' && *s <= 'Z') *s += 32;
-        s++;
-    }
+	while (*s) {
+		if (*s >= 'A' && *s <= 'Z')
+			*s += 32;
+		s++;
+	}
 }
 
 inline float get_distance_m(int distance, int output_rate) {
-     return MM_TO_M(distance) / output_rate;
+	return MM_TO_M(distance) / output_rate;
 }
 
 #ifdef __cplusplus

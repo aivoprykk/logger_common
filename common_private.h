@@ -5,15 +5,25 @@
 extern "C" {
 #endif
 
-#include "config.h"
-
-#if (defined(CONFIG_LOGGER_USE_GLOBAL_LOG_LEVEL) && CONFIG_LOGGER_GLOBAL_LOG_LEVEL < CONFIG_LOGGER_COMMON_LOG_LEVEL)
+#include "sdkconfig.h"
+#if (defined(CONFIG_LOGGER_USE_GLOBAL_LOG_LEVEL) &&                            \
+	 CONFIG_LOGGER_GLOBAL_LOG_LEVEL < CONFIG_LOGGER_COMMON_LOG_LEVEL)
 #define C_LOG_LEVEL CONFIG_LOGGER_GLOBAL_LOG_LEVEL
 #else
 #define C_LOG_LEVEL CONFIG_LOGGER_COMMON_LOG_LEVEL
 #endif
 #include "common_log.h"
+#include <string.h>
+
+#if defined(CONFIG_LOGGER_COMMON_USE_CFG)
+#include "config_manager.h"
+#include "strbf.h"
+#include "config.h"
+#include "config_lock.h"
+#include "config_observer.h"
+#include "config_registry.h"
 #include "unified_config.h"
+#endif
 
 #ifdef __cplusplus
 }

@@ -47,6 +47,59 @@ menu "ESPIDF Logger Common Configuration"
                     Specify the SCL pin for GPS Bmx280 sensor.
             endmenu
     endif
+    config LOGGER_COMMON_USE_CFG
+        bool "Enable Configuration Module"
+        default y
+        help
+            This option enables Configuration Module for GPS Logger.
+    
+        config LOGGER_VIBRATION_ENABLED
+            bool "Enable vibration motor for haptic feedback"
+            default y
+            help
+                Enable vibration motor control for button press feedback.
+                Motor is controlled via GPIO output (simple on/off).
+                WARNING: GPIO 34-39 on ESP32 (classic) are input-only.
+
+        if LOGGER_VIBRATION_ENABLED
+            menu "Logger Vibration Motor Options"
+            config LOGGER_VIBRATION_GPIO
+                int "Vibration motor GPIO pin"
+                range 0 48
+                default 12
+                help
+                    GPIO pin connected to vibration motor driver.
+                    Ensure pin supports OUTPUT mode:
+                    - ESP32: Avoid GPIO 34-39 (input-only, ADC pins)
+                    - ESP32-S3: All GPIO 0-48 support output
+                    Common safe choices: 13, 12, 27, 33 (ESP32)
+            
+            config LOGGER_VIBRATION_DEFAULT_DURATION_MS
+                int "Default vibration pulse duration (milliseconds)"
+                range 10 500
+                default 100
+                help
+                    Default duration for vibration pulses when duration
+                    parameter is 0. Typical values: 30-100ms for tactile
+                    feedback, 200ms+ for alerts.
+            
+            config LOGGER_VIBRATION_ON_BUTTON_PRESS
+                bool "Vibrate on button press (immediate feedback)"
+                default y
+                help
+                    Trigger vibration immediately when button is pressed down.
+                    Provides instant tactile feedback before event is recognized.
+            
+            config LOGGER_VIBRATION_ON_BUTTON_EVENT
+                bool "Vibrate on button event (gesture completion)"
+                default y
+                help
+                    Trigger vibration when button event is recognized
+                    (single click, double click, long press, etc).
+                    Confirms gesture was detected.
+            endmenu
+        endif
+    
     config LOGGER_USE_WDT
         bool "Enable Watchdog Timer"
         default n
