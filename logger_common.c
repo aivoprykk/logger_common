@@ -61,13 +61,28 @@ esp_err_t task_memory_info(const char *task_name) {
 
 #if (C_LOG_LEVEL <= LOG_WARN_NUM)
 esp_err_t mem_info(void) {
-	printf("*** Heap: free: %" PRIu32 " b, minfree: %" PRIu32
-		   " b, internal: %zu / %zu b, external: %zu / %zu b ***\n",
+	printf("*** Heap: "
+		   "free: %" PRIu32 " b, minfree: %" PRIu32" b"
+		   ", def: %zu / %zu b"
+		   ", int: %zu / %zu b"
+		   ", 8bit: %zu / %zu b"
+		   ", dma: %zu / %zu b"
+#if CONFIG_IDF_TARGET_ESP32S3
+		   ", spiram: %zu / %zu b"
+#endif
+		   " ***\n",
 		   esp_get_free_heap_size(), esp_get_minimum_free_heap_size(),
-		   heap_caps_get_total_size(MALLOC_CAP_INTERNAL),
-		   heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
-		   heap_caps_get_total_size(MALLOC_CAP_SPIRAM),
-		   heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
+		   /// may be internal is default, but not necessarily, so report both
+		   heap_caps_get_total_size(MALLOC_CAP_DEFAULT), heap_caps_get_free_size(MALLOC_CAP_DEFAULT),
+		   heap_caps_get_total_size(MALLOC_CAP_INTERNAL), heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
+		   /// may be 8bit is dma but not necessarily, so report both
+		   heap_caps_get_total_size(MALLOC_CAP_8BIT), heap_caps_get_free_size(MALLOC_CAP_8BIT),
+		   heap_caps_get_total_size(MALLOC_CAP_DMA), heap_caps_get_free_size(MALLOC_CAP_DMA)
+#if CONFIG_IDF_TARGET_ESP32S3
+		   /// report spiram for ESP32S3, which may be part of default/8bit/dma but not necessarily
+		   , heap_caps_get_total_size(MALLOC_CAP_SPIRAM), heap_caps_get_free_size(MALLOC_CAP_SPIRAM)
+#endif
+	);
 	return ESP_OK;
 }
 #endif

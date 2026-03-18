@@ -42,6 +42,12 @@ extern const size_t config_gps_item_count;
 extern const char *const speed_units[];
 extern const size_t speed_units_items_count;
 
+// Return the speed unit string for the current config, clamped to valid range
+static inline const char *get_speed_unit_str(uint8_t unit_idx) {
+	return speed_units[unit_idx < speed_units_items_count
+		? unit_idx : speed_units_items_count - 1];
+}
+
 #define DYNAMIC_MODEL_ITEM_LIST(l)                                             \
 	l(Portable) l(Pedestrian) l(Automotive) l(Sea)
 extern const char *const dynamic_models[];

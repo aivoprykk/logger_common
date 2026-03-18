@@ -2,6 +2,7 @@
 SET(SRCS
     logger_common.c
     logger_buffer_pool.c
+    logger_fixed_pool.c
 )
 
 if(CONFIG_LOGGER_VIBRATION_ENABLED)

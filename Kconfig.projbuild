@@ -25,7 +25,6 @@ menu "ESPIDF Logger Common Configuration"
     endif
     config BMX_ENABLE
         bool "Enable BMX280 temp sensor"
-        default y if HAS_BOARD_LILYGO_T_DISPLAY_S3
         default n
         help
             This option enables BMX280 temp sensor.

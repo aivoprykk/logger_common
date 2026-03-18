@@ -46,6 +46,15 @@ void config_unlock(void) {
 void config_lock_deinit(void) {
     // ILOG(TAG, "Deinitializing configuration lock");
     if (config_mutex) {
+        /* Take the mutex with a short timeout before deleting. This drains any
+         * task that is currently holding it, preventing FreeRTOS from walking
+         * a corrupted blocked-task list after vSemaphoreDelete(). If a task is
+         * blocked with portMAX_DELAY this will timeout, but that would indicate
+         * a bug in shutdown ordering (a subsystem task still running). */
+        if (xSemaphoreTake(config_mutex, pdMS_TO_TICKS(200)) != pdTRUE) {
+            ESP_LOGW(TAG, "config_lock_deinit: mutex still held at shutdown - "
+                         "possible task still running");
+        }
         vSemaphoreDelete(config_mutex);
         config_mutex = NULL;
     }
