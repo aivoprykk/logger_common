@@ -113,9 +113,8 @@ enum units_e {
 #define MS_TO_US(x) TO_K_UL(x)
 #define M_TO_MM(x) TO_K_UL(x)
 #define MS_TO_MM_S(x) TO_K_UL(x)
-#define ROUND_NANO(x) ((x) + 500000L)
-#define NANO_TO_MILLIS_ROUND(x) ((int32_t)(ROUND_NANO(x) / 1000000L))
-#define NANO_TO_US_ROUND(x) ((int32_t)(ROUND_NANO(x) / 1000L))
+#define NANO_TO_MILLIS_ROUND(x) c_nano_to_millis_round((int32_t)(x))
+#define NANO_TO_US_ROUND(x) c_nano_to_us_round((int32_t)(x))
 #define LEAP_UTC_OFFSET 18 // seconds, as of 2025
 #define POW_2(x) ((x) * (x))
 #define METERS_PER_LATITUDE_DEGREE 111195.0f
@@ -135,6 +134,11 @@ typedef struct m_config_item_s {
 
 struct tm;
 struct timeval;
+int32_t c_nano_to_millis_round(int32_t nano);
+int32_t c_nano_to_us_round(int32_t nano);
+void c_normalize_utc_fields(uint32_t *year, uint8_t *month, uint8_t *day,
+							uint8_t *hour, uint8_t *minute, uint8_t *second,
+							int32_t *subsecond, uint32_t units_per_second);
 struct tm *get_local_time(struct tm *info);
 int c_set_time(struct tm *tm, uint32_t us, int8_t timezone);
 int c_set_time_ts(int64_t sec, uint32_t us, int8_t timezone);

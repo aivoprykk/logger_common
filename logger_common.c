@@ -4,6 +4,7 @@
 #include "esp_heap_caps.h"
 #include "esp_system.h"
 #include "esp_timer.h"
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/time.h>
@@ -18,6 +19,118 @@ const char *logger_event_strings(int id) {
 #else
 const char *logger_event_strings(int id) { return "LOGGER_EVENT"; }
 #endif
+
+static bool is_leap_year(uint32_t year) {
+	return ((year % 4U) == 0U && (year % 100U) != 0U) ||
+		   ((year % 400U) == 0U);
+}
+
+static uint8_t days_in_month(uint32_t year, uint8_t month) {
+	static const uint8_t month_lengths[] = {
+		31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31,
+	};
+
+	if (month == 2U && is_leap_year(year)) {
+		return 29U;
+	}
+	return month_lengths[month - 1U];
+}
+
+static void increment_utc_minute(uint32_t *year, uint8_t *month, uint8_t *day,
+						 uint8_t *hour, uint8_t *minute) {
+	if (++(*minute) < 60U) {
+		return;
+	}
+
+	*minute = 0U;
+	if (++(*hour) < 24U) {
+		return;
+	}
+
+	*hour = 0U;
+	if (++(*day) <= days_in_month(*year, *month)) {
+		return;
+	}
+
+	*day = 1U;
+	if (++(*month) <= 12U) {
+		return;
+	}
+
+	*month = 1U;
+	++(*year);
+}
+
+static void decrement_utc_minute(uint32_t *year, uint8_t *month, uint8_t *day,
+						 uint8_t *hour, uint8_t *minute) {
+	if (*minute > 0U) {
+		--(*minute);
+		return;
+	}
+
+	*minute = 59U;
+	if (*hour > 0U) {
+		--(*hour);
+		return;
+	}
+
+	*hour = 23U;
+	if (*day > 1U) {
+		--(*day);
+		return;
+	}
+
+	if (*month > 1U) {
+		--(*month);
+	} else {
+		*month = 12U;
+		--(*year);
+	}
+	*day = days_in_month(*year, *month);
+}
+
+static int32_t round_signed_division(int32_t value, int32_t divisor) {
+	if (value >= 0) {
+		return (value + (divisor / 2)) / divisor;
+	}
+	return -(((-value) + (divisor / 2)) / divisor);
+}
+
+int32_t c_nano_to_millis_round(int32_t nano) {
+	return round_signed_division(nano, 1000000);
+}
+
+int32_t c_nano_to_us_round(int32_t nano) {
+	return round_signed_division(nano, 1000);
+}
+
+void c_normalize_utc_fields(uint32_t *year, uint8_t *month, uint8_t *day,
+						    uint8_t *hour, uint8_t *minute,
+						    uint8_t *second, int32_t *subsecond,
+						    uint32_t units_per_second) {
+	int64_t total_units = 0;
+	const int64_t units_per_minute = (int64_t)units_per_second * 60LL;
+
+	if (!year || !month || !day || !hour || !minute || !second || !subsecond ||
+		units_per_second == 0U || *month == 0U || *month > 12U) {
+		return;
+	}
+
+	total_units = ((int64_t)(*second) * (int64_t)units_per_second) + *subsecond;
+
+	while (total_units < 0) {
+		total_units += units_per_minute;
+		decrement_utc_minute(year, month, day, hour, minute);
+	}
+
+	while (total_units >= units_per_minute) {
+		total_units -= units_per_minute;
+		increment_utc_minute(year, month, day, hour, minute);
+	}
+
+	*second = (uint8_t)(total_units / (int64_t)units_per_second);
+	*subsecond = (int32_t)(total_units % (int64_t)units_per_second);
+}
 
 int c_set_time_ts(int64_t sec, uint32_t us, int8_t timezone) {
 	if (sec > 1672531200) { /// 2023-01-01
