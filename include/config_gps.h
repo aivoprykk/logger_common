@@ -36,6 +36,14 @@ extern "C" {
 extern const char *const config_gps_items[];
 extern const size_t config_gps_item_count;
 
+#if defined(CONFIG_GPS_LOG_ENABLE_GPY)
+#define GPS_LOG_HAS_GPY 1
+#endif
+
+#if defined(CONFIG_GPS_LOG_ENABLE_OAO)
+#define GPS_LOG_HAS_OAO 1
+#endif
+
 // GPS specific value lists
 
 #define SPEED_UNIT_VAL_LIST(l) l(msec) l(kmh) l(knot) l(mph)
@@ -62,11 +70,19 @@ extern const size_t file_date_time_items_count;
 extern const char *const timezone_items[];
 extern const size_t timezone_items_count;
 
-#if defined(CONFIG_GPS_LOG_GPY)
-#define LOG_FORMAT_ITEM_LIST(l) l(sbp) l(ubx) l(gpx) l(gpy)
+#if defined(GPS_LOG_HAS_OAO)
+#define LOG_FORMAT_OAO_ITEM(l) l(oao)
 #else
-#define LOG_FORMAT_ITEM_LIST(l) l(sbp) l(ubx) l(gpx)
+#define LOG_FORMAT_OAO_ITEM(l)
 #endif
+
+#if defined(GPS_LOG_HAS_GPY)
+#define LOG_FORMAT_GPY_ITEM(l) l(gpy)
+#else
+#define LOG_FORMAT_GPY_ITEM(l)
+#endif
+
+#define LOG_FORMAT_ITEM_LIST(l) l(sbp) l(ubx) l(gpx) LOG_FORMAT_OAO_ITEM(l) LOG_FORMAT_GPY_ITEM(l)
 #define LOG_FORMAT_ENUM(l) log_format_##l,
 enum log_format_items_e {
 	LOG_FORMAT_ITEM_LIST(LOG_FORMAT_ENUM) log_format_max
@@ -99,8 +115,11 @@ typedef union cfg_gps_log_enables_u {
 	struct {
 		uint8_t log_txt : 1;
 		LOG_FORMAT_ITEM_LIST(GPS_LOG_BITFIELD)
-#if !defined(CONFIG_GPS_LOG_GPY)
-		uint8_t reserved : 1;
+#if !defined(GPS_LOG_HAS_OAO)
+		uint8_t reserved_oao : 1;
+#endif
+#if !defined(GPS_LOG_HAS_GPY)
+		uint8_t reserved_gpy : 1;
 #endif
 		uint8_t log_ubx_nav_sat : 1;
 	} bits;

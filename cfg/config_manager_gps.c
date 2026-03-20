@@ -100,8 +100,13 @@ static uint8_t get_log_format_index(void) {
 	uint8_t idx = g_rtc_config.gps.log_enables.bits.log_sbp	  ? log_format_sbp
 				  : g_rtc_config.gps.log_enables.bits.log_ubx ? log_format_ubx
 				  : g_rtc_config.gps.log_enables.bits.log_gpx ? log_format_gpx
+
+#if defined(GPS_LOG_HAS_OAO)
+				  : g_rtc_config.gps.log_enables.bits.log_oao ? log_format_oao
+
+#endif
 				  :
-#if defined(CONFIG_GPS_LOG_GPY)
+#if defined(GPS_LOG_HAS_GPY)
 				  g_rtc_config.gps.log_enables.bits.log_gpy
 					  ? log_format_gpy
 					  :
