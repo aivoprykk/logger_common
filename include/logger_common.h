@@ -139,6 +139,9 @@ int32_t c_nano_to_us_round(int32_t nano);
 void c_normalize_utc_fields(uint32_t *year, uint8_t *month, uint8_t *day,
 							uint8_t *hour, uint8_t *minute, uint8_t *second,
 							int32_t *subsecond, uint32_t units_per_second);
+uint64_t c_utc_ms_from_date_time(uint32_t year, uint8_t month, uint8_t day,
+							 uint8_t hour, uint8_t minute, uint8_t second,
+							 int32_t millis, int32_t *normalized_millis);
 struct tm *get_local_time(struct tm *info);
 int c_set_time(struct tm *tm, uint32_t us, int8_t timezone);
 int c_set_time_ts(int64_t sec, uint32_t us, int8_t timezone);

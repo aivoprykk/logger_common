@@ -81,7 +81,7 @@ bool config_ubx_value_str(size_t index, strbf_t *sb, uint8_t *type) {
 #if defined(CFG_UBX_INCLUDE_PRIVATE_ITEMS)
 	case cfg_ubx_ubx_msgout_sat: // ubx_msgout_sat
 		if (sb)
-			strbf_putul(sb, g_rtc_config.ubx.msgout_sat);
+			strbf_putul(sb, g_rtc_config.ubx.log_sat_details);
 		*type = SCONFIG_ITEM_TYPE_BOOL;
 		break;
 #endif
@@ -176,8 +176,8 @@ bool config_ubx_get_item(size_t index, config_item_info_t *info) {
 		break;
 #if defined(CFG_UBX_INCLUDE_PRIVATE_ITEMS)
 	case cfg_ubx_ubx_msgout_sat: // ubx_msgout_sat
-		info->value = g_rtc_config.ubx.msgout_sat;
-		info->desc = "UBX NAV-SAT message output enable";
+		info->value = g_rtc_config.ubx.log_sat_details;
+		info->desc = "Log satellite detail data (NAV-DOP and derived sat stats)";
 		break;
 #endif
 	default:
@@ -226,12 +226,11 @@ static bool config_ubx_set_item_impl(size_t index, uint16_t val) {
 		break;
 #if defined(CFG_UBX_INCLUDE_PRIVATE_ITEMS)
 	case cfg_ubx_ubx_msgout_sat: // ubx_msgout_sat
-		if (g_rtc_config.ubx.msgout_sat != val) {
+		if (g_rtc_config.ubx.log_sat_details != val) {
 			FUNC_ENTRY_ARGS(TAG,
-					 "UBX NAV-SAT message output enable changed from %d to %d, "
-					 "reinit UBX.",
-					 g_rtc_config.ubx.msgout_sat, val);
-			g_rtc_config.ubx.msgout_sat = val;
+					 "Satellite detail logging changed from %d to %d.",
+					 g_rtc_config.ubx.log_sat_details, val);
+			g_rtc_config.ubx.log_sat_details = val;
 			changed = cfg_ubx_ubx_msgout_sat;
 		}
 		break;

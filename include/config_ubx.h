@@ -96,7 +96,7 @@ typedef struct cfg_ubx_s {
 	ubx_output_rate_t output_rate; // 1 byte - enum value 0x01-0x14
 	ubx_nav_mode_t nav_mode;	   // 1 byte - enum value 0-8
 	uint8_t gnss;				   // 1 byte - GNSS bitmask (0-127)
-	uint8_t msgout_sat;			   // 1 byte - boolean/flag
+	uint8_t log_sat_details;	   // 1 byte - log/detail flag for sat-derived data
 	// Total: 8 bytes (packed, aligned to 4)s
 	uint16_t reserved; // 2 bytes padding to make size multiple of 4
 } __attribute__((packed, aligned(4))) cfg_ubx_t;
@@ -108,7 +108,7 @@ typedef struct cfg_ubx_s {
 		.output_rate = UBX_OUTPUT_5HZ,                                         \
 		.nav_mode = UBX_MODE_PEDESTRIAN,                                       \
 		.gnss = 103,                                                           \
-		.msgout_sat = 1,                                                       \
+		.log_sat_details = 1,                                                  \
 	}
 
 #define CFG_ENUM_UBX(l) cfg_ubx_##l,

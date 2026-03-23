@@ -96,6 +96,19 @@ static int32_t round_signed_division(int32_t value, int32_t divisor) {
 	return -(((-value) + (divisor / 2)) / divisor);
 }
 
+static int64_t days_from_civil(int32_t year, uint32_t month, uint32_t day) {
+	year -= month <= 2U;
+	const int32_t era = (year >= 0 ? year : year - 399) / 400;
+	const uint32_t year_of_era = (uint32_t)(year - era * 400);
+	const uint32_t month_prime = month + (month > 2U ? (uint32_t)-3 : 9U);
+	const uint32_t day_of_year =
+		(153U * month_prime + 2U) / 5U + day - 1U;
+	const uint32_t day_of_era =
+		year_of_era * 365U + year_of_era / 4U - year_of_era / 100U + day_of_year;
+
+	return (int64_t)era * 146097LL + (int64_t)day_of_era - 719468LL;
+}
+
 int32_t c_nano_to_millis_round(int32_t nano) {
 	return round_signed_division(nano, 1000000);
 }
@@ -130,6 +143,30 @@ void c_normalize_utc_fields(uint32_t *year, uint8_t *month, uint8_t *day,
 
 	*second = (uint8_t)(total_units / (int64_t)units_per_second);
 	*subsecond = (int32_t)(total_units % (int64_t)units_per_second);
+}
+
+uint64_t c_utc_ms_from_date_time(uint32_t year, uint8_t month, uint8_t day,
+						 uint8_t hour, uint8_t minute, uint8_t second,
+						 int32_t millis, int32_t *normalized_millis) {
+	c_normalize_utc_fields(&year, &month, &day, &hour, &minute, &second,
+					   &millis, 1000U);
+	if (normalized_millis) {
+		*normalized_millis = millis;
+	}
+
+	if (year < 1970U || month == 0U || day == 0U) {
+		return 0;
+	}
+
+	const int64_t days = days_from_civil((int32_t)year, month, day);
+	const int64_t seconds = days * 86400LL + (int64_t)hour * 3600LL +
+						 (int64_t)minute * 60LL + (int64_t)second;
+
+	if (seconds < 0) {
+		return 0;
+	}
+
+	return (uint64_t)seconds * 1000ULL + (uint64_t)millis;
 }
 
 int c_set_time_ts(int64_t sec, uint32_t us, int8_t timezone) {
