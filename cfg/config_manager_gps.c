@@ -33,6 +33,38 @@ const char *const log_format_items[] = {LOG_FORMAT_ITEM_LIST(STRINGIFY)};
 const size_t log_format_items_count =
 	sizeof(log_format_items) / sizeof(log_format_items[0]);
 
+static uint8_t get_log_format_mask(uint8_t idx) {
+	switch (idx) {
+	case log_format_sbp:
+		return (uint8_t)(1U << 1);
+	case log_format_ubx:
+		return (uint8_t)(1U << 2);
+	case log_format_gpx:
+		return (uint8_t)(1U << 3);
+#if defined(GPS_LOG_HAS_OAO)
+	case log_format_oao:
+		return (uint8_t)(1U << 4);
+#endif
+#if defined(GPS_LOG_HAS_GPY)
+	case log_format_gpy:
+		return (uint8_t)(1U << 5);
+#endif
+	default:
+		return (uint8_t)(1U << 1);
+	}
+}
+
+static uint8_t get_all_log_format_masks(void) {
+	uint8_t mask = (uint8_t)((1U << 1) | (1U << 2) | (1U << 3));
+#if defined(GPS_LOG_HAS_OAO)
+	mask |= (uint8_t)(1U << 4);
+#endif
+#if defined(GPS_LOG_HAS_GPY)
+	mask |= (uint8_t)(1U << 5);
+#endif
+	return mask;
+}
+
 bool get_gps_item_descriptions(size_t index, struct strbf_s *sb) {
 	switch (index) {
 	case cfg_gps_speed_unit:
@@ -103,15 +135,11 @@ static uint8_t get_log_format_index(void) {
 
 #if defined(GPS_LOG_HAS_OAO)
 				  : g_rtc_config.gps.log_enables.bits.log_oao ? log_format_oao
-
 #endif
-				  :
 #if defined(GPS_LOG_HAS_GPY)
-				  g_rtc_config.gps.log_enables.bits.log_gpy
-					  ? log_format_gpy
-					  :
+				  : g_rtc_config.gps.log_enables.bits.log_gpy ? log_format_gpy
 #endif
-					  log_format_sbp; // Default to 0 if none set
+				  : log_format_sbp; // Default to 0 if none set
 	return idx;
 }
 
@@ -289,18 +317,14 @@ static bool config_gps_set_item_impl(size_t index, uint16_t val,
 	case cfg_gps_log_format: { // log_format
 		uint8_t idx = val < log_format_items_count ? val : log_format_sbp;
 		uint8_t cur_idx = get_log_format_index();
-		uint8_t format_mask = 0;
 		if (idx != cur_idx) {
 			FUNC_ENTRY_ARGSD(TAG, "Log format config changed from %d to %u.",
 							 cur_idx, idx);
-			// clean all format bits once
-			for (uint8_t i = 0; i < log_format_items_count; i++) {
-				format_mask |= (1 << (i + 1));
-			}
-			g_rtc_config.gps.log_enables.value &= ~format_mask;
+			g_rtc_config.gps.log_enables.value &= ~get_all_log_format_masks();
 			// set selected format bit
 			g_rtc_config.gps.log_enables.value =
-				(g_rtc_config.gps.log_enables.value & 0x01) | (1 << (idx + 1));
+				(g_rtc_config.gps.log_enables.value & 0x01)
+				| get_log_format_mask(idx);
 			changed = cfg_gps_log_format;
 		}
 		break;
